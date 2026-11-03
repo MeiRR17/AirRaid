@@ -27,3 +27,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Local IDE project metadata
+.idea/
+*.iml
