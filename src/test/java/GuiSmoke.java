@@ -71,6 +71,20 @@ public final class GuiSmoke {
                     || frame.activeGame() != null) {
                 throw new AssertionError("Returning to menu leaked an active simulation");
             }
+            // Ten additional menu/start/dispose cycles must leave no active
+            // simulation timer or stale screen references.
+            for (int i = 0; i < 10; i++) {
+                frame.startGame();
+                Gameplay next = frame.activeGame();
+                if (next == null || !next.timerRunning()) {
+                    throw new AssertionError("Start cycle " + i + " failed");
+                }
+                frame.returnToMenu();
+                if (next.timerRunning() || next.model().state() != GameState.STOPPED
+                        || frame.activeGame() != null) {
+                    throw new AssertionError("Leaked timer after cycle " + i);
+                }
+            }
             frame.dispose();
             System.out.println("AIRRAID_GUI_SMOKE_PASS");
         });
