@@ -11,6 +11,7 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -85,6 +86,10 @@ public final class Gameplay extends JPanel {
             button.setFocusable(false);
             button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         }
+        // Pause is shorter than Resume: reserve room for the longer label
+        // before the initial FlowLayout measures the buttons.
+        pauseButton.setPreferredSize(new Dimension(110,
+                pauseButton.getPreferredSize().height));
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEADING, 8, 5));
         toolbar.setBackground(new Color(21, 38, 60));
         toolbar.add(menuButton);
