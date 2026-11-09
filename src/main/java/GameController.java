@@ -17,7 +17,7 @@ public final class GameController {
             model.tick(16);
             afterTick.run();
             if (model.state() == GameState.RESULTS) {
-                timer.stop();
+                ((Timer) event.getSource()).stop();
                 onResults.run();
             }
         });
