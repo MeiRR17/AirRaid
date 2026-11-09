@@ -2,6 +2,13 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.0 — Internal beta stabilization
+- Fix real-time match pacing under coalesced or delayed Swing timer events using a monotonic elapsed clock.
+- Add deterministic ten-full-match/replay and dual-player input stress tests.
+- Add fail-closed beta evidence reporting, controlled playtest matrix, triage schema, support troubleshooting and bug issue template.
+- Display beta version in menu and game status; archive real CI screenshots and beta readiness evidence.
+- Public beta release remains blocked by human playtest/OS installation, legal rights and code-license approval.
+
 ## 0.8.0 — Desktop packaging foundation
 - Add host-native jpackage app-image creation for Windows/macOS/Linux using a bundled Java 21 runtime.
 - Add a packaged-launcher headless self-test, archive/media consistency checks and SHA-256 package evidence.

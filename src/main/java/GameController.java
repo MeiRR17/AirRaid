@@ -1,26 +1,28 @@
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
-/** EDT-only lifecycle adapter between the deterministic model and Swing. */
+/** One EDT-owned timer driven by elapsed monotonic time, not assumed frame rate. */
 public final class GameController {
     private final GameModel model;
     private final Timer timer;
     private final Runnable afterTick;
     private final Runnable onResults;
+    private final MatchClock clock;
 
     public GameController(GameModel model, Runnable afterTick, Runnable onResults) {
+        this(model, afterTick, onResults, System::nanoTime);
+    }
+
+    /** Deterministic test injection for slow-frame and pause/restart regressions. */
+    GameController(GameModel model, Runnable afterTick, Runnable onResults,
+                   LongSupplier nanoTime) {
         this.model = Objects.requireNonNull(model);
         this.afterTick = Objects.requireNonNull(afterTick);
         this.onResults = Objects.requireNonNull(onResults);
-        timer = new Timer(16, event -> {
-            model.tick(16);
-            afterTick.run();
-            if (model.state() == GameState.RESULTS) {
-                ((Timer) event.getSource()).stop();
-                onResults.run();
-            }
-        });
+        clock = new MatchClock(nanoTime);
+        timer = new Timer(16, event -> poll());
         timer.setCoalesce(true);
     }
 
@@ -30,10 +32,25 @@ public final class GameController {
         }
     }
 
+    /** Also used in headless EDT tests to simulate coalesced display frames. */
+    void poll() {
+        assertEdt();
+        if (model.state() != GameState.RUNNING) return;
+        int elapsed = clock.elapsedMilliseconds();
+        if (elapsed <= 0) return;
+        model.tick(elapsed);
+        afterTick.run();
+        if (model.state() == GameState.RESULTS) {
+            timer.stop();
+            onResults.run();
+        }
+    }
+
     public void startNewGame() {
         assertEdt();
         timer.stop();
         model.startNewGame();
+        clock.reset();
         timer.start();
         afterTick.run();
     }
@@ -43,6 +60,7 @@ public final class GameController {
         if (model.state() == GameState.RUNNING) {
             timer.stop();
             model.pause();
+            clock.reset();
             afterTick.run();
         }
     }
@@ -51,6 +69,7 @@ public final class GameController {
         assertEdt();
         if (model.state() == GameState.PAUSED) {
             model.resume();
+            clock.reset();
             timer.start();
             afterTick.run();
         }
