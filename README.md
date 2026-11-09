@@ -1,61 +1,71 @@
 # AirRaid
 
-An offline, **two-player Java Swing arcade game**. Two automatically flying planes compete to destroy targets while avoiding canyon strikes. AirRaid is a game, **not** an emergency alerting application.
+AirRaid is an offline, **two-player Java Swing arcade game**. Two automatic planes race to destroy targets using bombs. It is not an air-raid warning service.
 
-**Development version: v0.3.0 — gameplay rules and scoring.** This is not yet a production-ready desktop distribution.
+**Development milestone: v0.4.0 — responsive interface and complete game flow.** This is not yet a packaged production release.
 
-## Build and run
+## Build and play
 
-Install **JDK 21** and **Maven 3.9+**, then run:
+Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.3.0.jar
+java -jar target/airraid-0.4.0.jar
 ```
 
-The runnable JAR bundles all graphics and fonts. For a GUI smoke test, GitHub Actions launches the application under Xvfb and checks Start, Pause, Resume, Restart, Menu and disposal. Normal unit tests run headlessly.
+The JAR includes the existing graphics, GIF and fonts. A graphical desktop is required to play; unit tests run headlessly, and CI verifies the GUI using Xvfb.
 
-## Controls
+## Screens and navigation
 
-| Player | Action |
+The application now uses one **resizable** Swing window, with integrated screens:
+
+- **Main menu:** Start, Rules, Exit. Press **Enter** to start or **H** to view instructions. Tab navigates menu buttons.
+- **Game:** toolbar with Menu, Pause/Resume, Restart and Rules; a persistent, legible scores/strikes/timer status bar; a scalable arena.
+- **Rules:** accessible, scrollable in-app reference. **Escape** or **Back** returns to the previous screen. Opening Rules during a game pauses it; returning never silently resumes.
+- **Results:** dedicated view with winner/tie, both scores and strike totals, **Play again** and **Main menu**.
+
+| Control | During game |
 | --- | --- |
-| Blue | **Enter** — launch bomb |
-| Orange | **Space** — launch bomb |
-| Both | **P** — pause/resume, **R** — restart |
-| Menu | Buttons: **Start**, **Pause/Resume**, **Restart**, **Menu** |
+| **Enter** | Blue — fire (once per press) |
+| **Space** | Orange — fire (once per press) |
+| **P** | Pause / resume |
+| **R** | Restart the match |
+| **H** | Rules (pauses match) |
+| **Escape** | Exit match and return to main menu |
 
-Hold-and-repeat does not auto-fire. Each player can have only one live bomb at a time.
+The game pauses automatically on desktop focus loss; resume explicitly with **P** or the Resume button.
 
-## Rules (v0.3.0)
+## Gameplay rules
 
-- **Targets:** four score tiers worth 1–4 points, arranged in eight rows. An intact target may award points only once.
-- **Canyon strikes:** a bomb that exits the left, right or lower edge without destroying a target gives its owner **one strike**. A scored hit does not add a strike.
-- **Four-strike loss:** reaching four strikes immediately loses the round, regardless of the score. If both players reach four on the same simulation step, the result is a draw.
-- **60-second clock:** if no one has lost by strikes, the player with the most points wins at the end; equal scores are a tie.
-- **Simultaneous events:** all events in a simulation step count before declaring a winner. Strikes take precedence over the timer at the same step; an exact two-bomb hit on the same target awards it once, with alternating tie priority beginning with Blue.
-- **Pause/restart:** pause freezes simulation; restart completely clears points, strikes, targets and held input.
+Each bomb can destroy one intact target for **1–4 points**. A shot missing the target field causes a canyon strike. **Four strikes** immediately lose the match (simultaneous fourth strikes draw). Otherwise, the higher score at **60 seconds** wins; equal scores draw. The simulation and its rules remain independent of the window dimensions.
 
-The complete specification, edge-case rules, and tests are documented in [Game Rules v0.3.0](docs/V0_3_GAME_RULES.md) and [Instructions/About](Instructions/About).
+Full rule contract: [Instructions/About](Instructions/About) and [v0.3.0 Game Rules](docs/V0_3_GAME_RULES.md).
 
-## Architecture and tests
+## Scaling and accessibility
 
-`GameModel` owns deterministic scoring, collision events and match outcomes. `GameRules` defines bounds, target tiers, the time limit and swept collision geometry. `GameController` drives one Swing EDT timer and stops on a result. `Gameplay` displays two scores, the remaining time, and both canyon strike counts. The test suite includes boundary exits, score durability, simultaneous collisions, ties, pause and restart, as well as GUI lifecycle smoke tests.
+The logical game world is fixed at **800×800**. `GameCanvas` preserves its aspect ratio and letterboxes it inside any available panel size; gameplay physics are unaffected by window resizing or DPI changes. The toolbar and status are Swing-managed layouts rather than fixed pixel positions. The Rules card scrolls at smaller window sizes.
 
-## Roadmap
+This milestone improves keyboard access and basic readable screens. Full assistive-technology validation, persistent preferences, and accessibility refinements remain planned for v0.6.0.
 
-- [Production roadmap to v1.0.0](docs/ROADMAP.md)
+## Architecture and checks
+
+`GameModel` is a deterministic simulation, with no worker threads. `GameController` drives one EDT timer and stops it on pause, result, or exit. `Window` coordinates menu/rules/game cards; `Gameplay` manages game/result cards, keyboard bindings, status and lifecycle. `GameCanvas` renders scaled sprites from bundled assets.
+
+`GameCanvasTest` checks landscape/portrait/zero-size layout, offscreen rendering and the results panel. `GuiSmoke` validates the menu→rules→game→rules→game→results→replay→menu flow, keyboard controls, resize, and repeated start/disposal without timer leakage.
+
+- [Roadmap v0.1.0–v1.0.0](docs/ROADMAP.md)
+- [v0.4.0 implementation and acceptance](docs/V0_4_IMPLEMENTATION.md)
 - [Progress tracker](https://github.com/MeiRR17/AirRaid/issues/3)
-- [Production release checklist](docs/RELEASE_CHECKLIST.md)
-- [Legacy baseline audit](docs/BASELINE_AUDIT.md)
+- [Production checklist](docs/RELEASE_CHECKLIST.md)
 
-**Next:** v0.4.0 (polished game flow, scalable layout, focus/accessibility and responsive UI). Cross-platform native installers, rights review, and real user playtests still remain before v1.0.0.
+**Next planned version:** v0.5.0 — visual polish, asset performance, sound/licensing. Native installers, cross-OS smoke and real two-person playtests remain to be done before production.
 
-## Original project screenshots (not screenshots of v0.3.0)
+## Original screenshots — *not v0.4.0 captures*
 
-![Original game screenshot](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
+![Original AirRaid screenshot](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
 
-![Original game screenshot](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
+![Original AirRaid screenshot](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
 
-## License
+## Asset rights
 
-Before distributing a public installer, verify rights to each bundled sprite, font, GIF and image; see the [release checklist](docs/RELEASE_CHECKLIST.md).
+Before public redistribution, verify copyright and permitted use of bundled fonts, artwork and animation. See `docs/RELEASE_CHECKLIST.md`.
