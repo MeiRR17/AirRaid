@@ -112,7 +112,13 @@ def inspect(root: Path, jar: Path | None = None) -> dict:
         blockers.append("source code LICENSE is not owner-approved/published")
     if not (root / "docs" / "RELEASE_APPROVAL.md").is_file():
         blockers.append("human release approval not recorded")
-    source_ok = not errors and len(verified_source) == len(actual_paths)
+    # A JAR-only packaging defect must not incorrectly invalidate an
+    # otherwise byte-perfect source tree. Keep independent truth values.
+    source_errors = [error for error in errors
+                     if not error.startswith("JAR ")
+                     and error != "duplicate resource entries in JAR"
+                     and error != "packaged JAR cannot be inspected"]
+    source_ok = not source_errors and len(verified_source) == len(actual_paths)
     package_ok = jar is None or (
         archive is not None and len(verified_zip) == len(actual_paths)
         and not any("JAR" in error for error in errors)
