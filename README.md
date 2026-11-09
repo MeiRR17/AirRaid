@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.6.0 — accessibility, keyboard support and local preferences.** Public native installers and the production release remain pending.
+**Current development version: v0.7.0 — quality, security and release-readiness safeguards.** Public native installers and the production release remain pending.
 
 ## Build and play
 
@@ -10,7 +10,7 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.6.0.jar
+java -jar target/airraid-0.7.0.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
@@ -49,6 +49,25 @@ Targets yield 1–4 points once per target. A bomb that exits the arena without 
 
 The simulation remains deterministic and independent of rendering or audio. Pausing stops the game timer; switching menus disposes the old simulation. The arena scales proportionally in resizable windows.
 
+## Quality and security (v0.7.0)
+
+- Bounded, seeded two-player gameplay invariants and end-of-round regression tests ensure scores cannot exceed destroyed target values and match state stays deterministic.
+- Local settings refuse symbolic links and special files, protecting unrelated user files from being read or overwritten through the preferences path.
+- Startup diagnostics use stable error codes without printing file paths, stack traces, tokens or personal data.
+- Every bundled image/font/GIF is listed in `docs/asset-provenance.tsv` with its source Git blob SHA and `UNVERIFIED` rights status. `tools/release_gate.py` checks these resources against the source tree **and executable JAR**, producing a machine-readable report in `target/release-readiness.json`.
+- CI verifies the declaration of directly pinned Maven components using `tools/dependency_inventory.py` and now pins GitHub Actions by immutable commit SHA.
+- Public release mode is intentionally **blocked** because 23 visual assets lack verified redistribution rights and a source-code license has not been approved. These facts are not repaired by passing tests. See [security policy](SECURITY.md), [third-party notices](THIRD_PARTY_NOTICES.md), [code-license status](docs/LICENSE_STATUS.md), [dependency audit](docs/DEPENDENCY_AUDIT.md) and [quality evidence](docs/V0_7_IMPLEMENTATION.md).
+
+Development commands (after `mvn clean verify`):
+
+```sh
+python3 -m unittest discover -s tools -p 'test_*.py' -v
+python3 tools/dependency_inventory.py --pom pom.xml
+python3 tools/release_gate.py --mode development --jar target/airraid-0.7.0.jar
+```
+
+The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.
+
 ## Implementation and validation
 
 The `PreferencesStore` safely reads/writes versioned local settings, `UserPreferences` provides immutable validated snapshots, and `SettingsScreen` is an accessible Swing interface. `Window` coordinates persistence and settings navigation; `Gameplay`, `GameCanvas` and `GameOpening` apply volume, audio and reduced-motion choices immediately.
@@ -62,7 +81,7 @@ Tests cover settings round trips, schema corruption/invalid values, safe default
 - [Visual asset license inventory](docs/ASSET_LICENSE_AUDIT.md)
 - [Public release blocker — 23 unverified visual assets](https://github.com/MeiRR17/AirRaid/issues/9)
 
-**Next:** v0.7.0 quality/security/asset-rights hardening; then native installation packages, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
+**Next:** v0.8.0 installable native packaging and platform verification, while unresolved v0.7.0 legal/security gates stay open; then, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
 
 ## Historical screenshots (original game, not this version)
 
