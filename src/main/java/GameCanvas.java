@@ -1,4 +1,4 @@
-import javax.swing.JComponent;
+import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -13,7 +13,7 @@ import java.util.Random;
  * arena; resizing letterboxes the whole arena instead of distorting sprites
  * or shifting target collision coordinates.
  */
-public final class GameCanvas extends JComponent {
+public final class GameCanvas extends JPanel {
     public record Viewport(int x, int y, int width, int height, double scale) {}
 
     private final GameModel model;
