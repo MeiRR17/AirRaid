@@ -1,68 +1,41 @@
-import java.awt.*;
+import java.awt.geom.Rectangle2D;
 
-public class Player extends Thread {
-    /*In this class we're going to make player's plane*/
-    private final int WIDTH, HEIGHT;
-    private int START_X;
-    private int START_Y;
+/** Mutable plane position, owned exclusively by GameModel (no worker threads). */
+public final class Player {
+    private static final double SPEED_PX_PER_SECOND = 100.0;
+    private final int width;
+    private final int height;
+    private final int direction;
+    private double x;
+    private final double y;
 
-    private final int moveX;
-    private final int speed;
-    private final Image image;
-    public Player (int speed, int START_X, int START_Y, int width, int height, Image image) {
-        this.START_X = START_X;
-        this.moveX = START_X;
-        this.START_Y = START_Y;
-        this.WIDTH = width;
-        this.HEIGHT = height;
-        this.image = image;
-        this.speed = speed;
-    }
-    public void moveRight(){
-        START_X += speed;
-    }
-    public void moveLeft(){
-        START_X -= speed;
-    }
-    public void paint(Graphics graphics){
-        graphics.drawImage(image, START_X, START_Y, START_X + WIDTH, START_Y + HEIGHT, 0, 0, image.getWidth(null), image.getHeight(null), null);
+    public Player(double x, double y, int width, int height, int direction) {
+        if (direction != -1 && direction != 1) {
+            throw new IllegalArgumentException("direction must be -1 or +1");
+        }
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.direction = direction;
     }
 
-    public void run(){
-        while (true){
-            if (this.moveX > 0 && this.moveX < 800/4){
-                this.START_X++;
-            }else {
-                this.START_X--;
-            }
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+    void advance(double seconds, int worldWidth) {
+        x += direction * SPEED_PX_PER_SECOND * seconds;
+        if (direction > 0 && x > worldWidth) {
+            x = -width;
+        } else if (direction < 0 && x + width < 0) {
+            x = worldWidth;
         }
     }
-    public int getX(){
-        return this.START_X;
-    }
 
-    public int getY(){
-        return this.START_Y;
-    }
+    public double x() { return x; }
+    public double y() { return y; }
+    public int width() { return width; }
+    public int height() { return height; }
+    public int direction() { return direction; }
 
-    public void setX(int START_X){
-        this.START_X = START_X;
-    }
-
-    public void setY(int START_Y){
-        this.START_Y = START_Y;
-    }
-
-    public int getWIDTH() {
-        return WIDTH;
-    }
-
-    public int getHEIGHT() {
-        return HEIGHT;
+    public Rectangle2D bounds() {
+        return new Rectangle2D.Double(x, y, width, height);
     }
 }

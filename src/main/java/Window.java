@@ -1,39 +1,73 @@
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.CardLayout;
+import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
-public class Window extends JFrame {
-    private static final int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 800;
-    Image icon = Assets.image("/Resource/Window/gameIcon.jpg");
-    private final Image background;
+/** Owns one game screen at a time and disposes the previous match on navigation. */
+public final class Window extends JFrame {
+    private static final String MENU = "menu";
+    private static final String GAME = "game";
+    private final CardLayout navigation = new CardLayout();
+    private final JPanel screens = new JPanel(navigation);
+    private Gameplay gameplay;
 
-    public Window(Image background){
-        this.background = background;
-        setIconImage(icon);
-        this.setTitle("Air Raid");
-        this.setSize(WINDOW_WIDTH, WINDOW_HEIGHT); /*Set the size of the JFrame*/
-        this.setLocationRelativeTo(null); /*Make the Window pop-up in the middle of the screen (width, height)*/
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); /*Make the program end when closing the window with code 0*/
-        this.setLayout(null); /*Make the ability to control how the components added to the container are arranged and sized*/
-        this.setResizable(false); /*Disable window's resize*/
+    public Window() {
+        super("Air Raid");
+        setIconImage(Assets.image("/Resource/Window/gameIcon.jpg"));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        screens.add(new GameOpening(this::startGame), MENU);
+        setContentPane(screens);
+        setPreferredSize(new Dimension(800, 800));
+        pack();
+        setResizable(false);
+        setLocationRelativeTo(null);
 
-        GameOpening openingGame = new GameOpening(this, WINDOW_WIDTH, WINDOW_HEIGHT);
-        add(openingGame.getTitlePanel());
-
-        Gameplay gameplay = new Gameplay(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        openingGame.getStartButton().addActionListener(e -> {
-            openingGame.getTitlePanel().setVisible(false);
-            openingGame.getStartButton().setVisible(false);
-            add(gameplay);
-            gameplay.requestFocusInWindow();
+        addWindowListener(new WindowAdapter() {
+            @Override public void windowClosing(WindowEvent event) {
+                if (gameplay != null) {
+                    gameplay.disposeGame();
+                }
+            }
         });
-        /*Create new Gameplay Object and make it the same size as the window*/
+
+        addWindowFocusListener(new WindowAdapter() {
+            @Override public void windowLostFocus(WindowEvent event) {
+                if (gameplay != null) {
+                    gameplay.pauseGame();
+                }
+            }
+        });
     }
-    public void paint(Graphics g){
-        super.paint(g);
-        g.drawImage(background, 0, 0, null);
+
+    public void startGame() {
+        if (gameplay != null) {
+            gameplay.disposeGame();
+            screens.remove(gameplay);
+        }
+        gameplay = new Gameplay(this::returnToMenu);
+        screens.add(gameplay, GAME);
+        navigation.show(screens, GAME);
+        screens.revalidate();
+        gameplay.startGame();
+        gameplay.requestFocusInWindow();
     }
-    public void showWindow(){//This method will make the JFrame visible
-        this.setVisible(true);/*JFrame's build-in method to set it to be visible*/
+
+    public void returnToMenu() {
+        if (gameplay != null) {
+            gameplay.disposeGame();
+            screens.remove(gameplay);
+            gameplay = null;
+        }
+        navigation.show(screens, MENU);
+        screens.revalidate();
+        screens.repaint();
+    }
+
+    public Gameplay activeGame() { return gameplay; }
+
+    public void showWindow() {
+        setVisible(true);
     }
 }

@@ -1,54 +1,55 @@
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 
-public class GameOpening {
-    private final JPanel titlePanel;
-    private final JButton startButton;
+/** Start screen only; no game simulation is allocated until Start is clicked. */
+public final class GameOpening extends JPanel {
+    private final JButton startButton = new JButton("Start");
 
-    public GameOpening(JFrame jFrame, int GAME_OPENING_WIDTH, int GAME_OPENING_HEIGHT) {
+    public GameOpening(Runnable onStart) {
+        setBackground(new Color(12, 26, 43));
+        setLayout(new BorderLayout(12, 12));
+        setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
 
-        titlePanel = new JPanel();
-        titlePanel.setBounds(GAME_OPENING_WIDTH / 8, GAME_OPENING_HEIGHT / 6, GAME_OPENING_WIDTH / 4 * 3, GAME_OPENING_HEIGHT / 4);
+        JLabel heading = new JLabel("AIR RAID", SwingConstants.CENTER);
+        heading.setForeground(Color.WHITE);
+        heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 48));
+        add(heading, BorderLayout.NORTH);
 
-        // Set the layout of titlePanel to null to allow custom positioning
-        titlePanel.setLayout(null);
+        JPanel center = new JPanel();
+        center.setOpaque(false);
+        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
+        JLabel gif = new JLabel(new ImageIcon(Assets.url("/Resource/General/FLY_.gif")));
+        gif.setAlignmentX(CENTER_ALIGNMENT);
+        gif.setHorizontalAlignment(SwingConstants.CENTER);
+        center.add(gif);
+        center.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Create a JLabel to hold the GIF
-        JLabel backgroundLabel = new JLabel();
-        backgroundLabel.setBounds(0, 0, titlePanel.getWidth(), titlePanel.getHeight());
+        JLabel rules = new JLabel("<html><div style='text-align:center'>Blue: Enter &nbsp; | &nbsp; Orange: Space<br>"
+                + "Destroy targets to earn points. One-minute match.</div></html>", SwingConstants.CENTER);
+        rules.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
+        rules.setForeground(Color.WHITE);
+        rules.setAlignmentX(CENTER_ALIGNMENT);
+        center.add(rules);
+        add(center, BorderLayout.CENTER);
 
-        // Load the GIF file and create an ImageIcon
-        ImageIcon gifIcon = new ImageIcon(Assets.url("/Resource/General/FLY_.gif"));
-
-        // Set the ImageIcon as the icon for the JLabel
-        backgroundLabel.setIcon(gifIcon);
-
-        // Add the JLabel to the titlePanel
-        titlePanel.add(backgroundLabel);
-
-        JLabel titleNameLabel = new JLabel("AIR-RAID");
-        titleNameLabel.setForeground(Color.WHITE);
-        titleNameLabel.setFont(new Font("Times New Roman", Font.PLAIN, 90));
-        titlePanel.add(titleNameLabel);
-
-        JPanel startButtonPanel = new JPanel();
-        startButtonPanel.setBounds(GAME_OPENING_WIDTH / 8 * 3, GAME_OPENING_HEIGHT / 6 * 4, GAME_OPENING_WIDTH / 4, GAME_OPENING_HEIGHT / 8);
-
-        startButton = new JButton("START");
-        startButton.setBackground(Color.GRAY.brighter());
-
-        startButton.setForeground(Color.BLACK);
-        startButton.setFont(new Font("Times New Roman", Font.PLAIN, 55));
-        startButtonPanel.add(startButton);
-        titlePanel.add(startButtonPanel);
-        jFrame.add(startButtonPanel);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        actions.setOpaque(false);
+        startButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+        startButton.addActionListener(event -> onStart.run());
+        actions.add(startButton);
+        add(actions, BorderLayout.SOUTH);
     }
 
-    public JPanel getTitlePanel() {
-        return titlePanel;
-    }
-
-    public JButton getStartButton() {
-        return startButton;
-    }
+    public JButton startButton() { return startButton; }
 }

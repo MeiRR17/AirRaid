@@ -1,66 +1,39 @@
-import java.awt.*;
+import java.awt.geom.Rectangle2D;
 
-public class Target extends Thread {
-    private int START_X, START_Y;
-    private int WIDTH, HEIGHT;
-    private int number;//number shown on the target
-    private Image image;
-    public Target(int START_X, int START_Y, int WIDTH, int HEIGHT, int number, Image image) {
-        this.START_X = START_X;
-        this.START_Y = START_Y;
-        this.WIDTH = WIDTH;
-        this.HEIGHT = HEIGHT;
-        this.number = number;
-        this.image = image;
-    }
-    public Rectangle calculateRectangle(){
-        return new Rectangle(this.START_X,this.START_Y,this.WIDTH,this.HEIGHT);
-    }
-    public void draw(Graphics graphics){
-        graphics.drawImage(image, START_X, START_Y, START_X + WIDTH, START_Y + HEIGHT, 0, 0, image.getWidth(null), image.getHeight(null), null);
-    }
+/** One fixed target. A successful hit can award points only once. */
+public final class Target {
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+    private final int value;
+    private boolean destroyed;
 
-    public int getNumber(){
-        return this.number;
+    public Target(int x, int y, int width, int height, int value) {
+        if (value < 1 || value > 4) {
+            throw new IllegalArgumentException("Target value must be 1–4");
+        }
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.value = value;
     }
 
-    public int getHEIGHT(){
-        return this.HEIGHT;
+    /** Returns the awarded points, or zero after a previous hit. */
+    int hit() {
+        if (destroyed) {
+            return 0;
+        }
+        destroyed = true;
+        return value;
     }
 
-    public int getX() {
-        return this.START_X;
-    }
-
-    public int getWIDTH() {
-        return this.WIDTH;
-    }
-
-    public int getY() {
-        return this.START_Y;
-    }
-
-    public void setSTART_X(int START_X) {
-        this.START_X = START_X;
-    }
-
-    public void setSTART_Y(int START_Y) {
-        this.START_Y = START_Y;
-    }
-
-    public void setWIDTH(int WIDTH) {
-        this.WIDTH = WIDTH;
-    }
-
-    public void setHEIGHT(int HEIGHT) {
-        this.HEIGHT = HEIGHT;
-    }
-
-    public void setNumber(int number) {
-        this.number = number;
-    }
-
-    public void setImage(Image image) {
-        this.image = image;
-    }
+    public Rectangle2D bounds() { return new Rectangle2D.Double(x, y, width, height); }
+    public int x() { return x; }
+    public int y() { return y; }
+    public int width() { return width; }
+    public int height() { return height; }
+    public int value() { return value; }
+    public boolean isDestroyed() { return destroyed; }
 }

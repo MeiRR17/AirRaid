@@ -1,34 +1,95 @@
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import java.awt.Window;
+import java.awt.Component;
+import java.awt.Container;
 
 /**
- * Minimal graphical smoke test: run with a display (e.g. xvfb-run), not by JUnit in headless mode.
- * The legacy game still starts background threads, so explicitly exit after the window check.
+ * Runs under a virtual display in CI; verifies navigation and safe timer lifecycle.
+ * A standalone main rather than JUnit, since ordinary tests execute headlessly.
  */
 public final class GuiSmoke {
     private GuiSmoke() {}
 
+    private static JButton button(Component root, String text) {
+        if (root instanceof JButton b && b.getText().equals(text)) {
+            return b;
+        }
+        if (root instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JButton match = button(child, text);
+                if (match != null) {
+                    return match;
+                }
+            }
+        }
+        return null;
+    }
+
     public static void main(String[] args) throws Exception {
         Main.main(new String[0]);
         SwingUtilities.invokeAndWait(() -> {
-            boolean mainWindowVisible = false;
-            boolean rulesWindowVisible = false;
-            for (Window window : Window.getWindows()) {
-                if (window instanceof JFrame frame && window.isShowing()) {
-                    mainWindowVisible |= "Air Raid".equals(frame.getTitle());
-                    rulesWindowVisible |= "Rules Before The Gaming / RBTG".equals(frame.getTitle());
+            Window frame = null;
+            for (java.awt.Window candidate : java.awt.Window.getWindows()) {
+                if (candidate instanceof Window app && app.isShowing()) {
+                    frame = app;
+                    break;
                 }
             }
-            if (!mainWindowVisible || !rulesWindowVisible) {
-                throw new AssertionError("Main or rules window did not become visible");
+            if (frame == null || !"Air Raid".equals(frame.getTitle())) {
+                throw new AssertionError("Main Air Raid menu not visible");
             }
+            JButton start = button(frame.getContentPane(), "Start");
+            if (start == null) {
+                throw new AssertionError("Start button missing");
+            }
+            start.doClick();
+            Gameplay gameplay = frame.activeGame();
+            if (gameplay == null || gameplay.model().state() != GameState.RUNNING
+                    || !gameplay.timerRunning()) {
+                throw new AssertionError("Gameplay did not start");
+            }
+            gameplay.pauseGame();
+            if (gameplay.model().state() != GameState.PAUSED || gameplay.timerRunning()) {
+                throw new AssertionError("Pause did not stop timer");
+            }
+            gameplay.resumeGame();
+            if (gameplay.model().state() != GameState.RUNNING || !gameplay.timerRunning()) {
+                throw new AssertionError("Resume did not restart timer");
+            }
+            JButton restart = button(gameplay, "Restart");
+            if (restart == null) {
+                throw new AssertionError("Restart button missing");
+            }
+            restart.doClick();
+            if (gameplay.model().state() != GameState.RUNNING
+                    || gameplay.model().score(0) != 0) {
+                throw new AssertionError("Restart did not reset match");
+            }
+            frame.returnToMenu();
+            if (gameplay.timerRunning() || gameplay.model().state() != GameState.STOPPED
+                    || frame.activeGame() != null) {
+                throw new AssertionError("Returning to menu leaked an active simulation");
+            }
+            // Ten additional menu/start/dispose cycles must leave no active
+            // simulation timer or stale screen references.
+            for (int i = 0; i < 10; i++) {
+                frame.startGame();
+                Gameplay next = frame.activeGame();
+                if (next == null || !next.timerRunning()) {
+                    throw new AssertionError("Start cycle " + i + " failed");
+                }
+                frame.returnToMenu();
+                if (next.timerRunning() || next.model().state() != GameState.STOPPED
+                        || frame.activeGame() != null) {
+                    throw new AssertionError("Leaked timer after cycle " + i);
+                }
+            }
+            frame.dispose();
             System.out.println("AIRRAID_GUI_SMOKE_PASS");
-            for (Window window : Window.getWindows()) {
-                window.dispose();
-            }
         });
-        // Current pre-v0.2.0 game threads are not lifecycle-safe; terminate the test process.
+        // ImageIcon GIF animation is managed by AWT; terminate only after the
+        // asserted simulation timer has stopped and the JFrame is disposed.
         System.exit(0);
     }
 }

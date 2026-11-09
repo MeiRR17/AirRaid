@@ -1,365 +1,159 @@
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.Image;
 import java.util.Random;
 
-
-public class Gameplay extends JPanel implements KeyListener
-{
-    /*In this class we're going to combine the whole game*/
-    private static final int WIDTH = 800, HEIGHT = 800;
-
-    private final Target[][] targets;
-    private final Player[] planes;
-    private final Bomb[] bombs;
-
-    private final boolean[] pressedKeys;
-    private static final int ENTER = 0;
-    private static final int SPACE = 1;
-    private static final int ROWS = 8;
-    private static final int COLUMN = 38;
-    private static int blueChecker = 0;
-    private static int  orangeChecker = 0;
-    private static int orangeScore = 0;
-    private static int blueScore = 0;
-    private final JLabel blueLabel;
-    private final JLabel orangeLabel;
-    private static final int GAME_DURATION_MS = 60000;  // 60 seconds
-    private Timer gameTimer;
-    private int timeLeft;
-    private static final Font PIXEL_FONT = Assets.font("/Resource/Font/Pixel.ttf", 30f);
+/**
+ * A renderer and keyboard adapter only. All game mutations are performed by the
+ * model on Swing's EDT; no custom simulation threads are launched.
+ */
+public final class Gameplay extends JPanel {
+    private final GameModel model = new GameModel();
+    private final GameController controller = new GameController(model, this::repaint, this::repaint);
     private final Image background = Assets.image("/Resource/General/background.png");
-    private boolean running = true;
+    private final Image[] planes = new Image[2];
+    private final Image[] bombImages = {
+            Assets.image("/Resource/Bomb/Blue.png"), Assets.image("/Resource/Bomb/Orange.png")
+    };
+    private final Image[] targetImages = new Image[4];
+    private final Font hudFont = Assets.font("/Resource/Font/Pixel.ttf", 26f);
+    private final JButton pause = new JButton("Pause");
 
+    public Gameplay(Runnable onMenu) {
+        setBackground(new Color(11, 19, 37));
+        setFocusable(true);
+        setLayout(null);
 
+        Random random = new Random();
+        planes[0] = Assets.image("/Resource/Player/BLUE_TEAM/option" + (random.nextInt(5) + 1) + ".png");
+        planes[1] = Assets.image("/Resource/Player/ORANGE_TEAM/option" + (random.nextInt(5) + 1) + ".png");
+        for (int i = 0; i < targetImages.length; i++) {
+            targetImages[i] = Assets.image("/Resource/Target/" + (i + 1) + ".png");
+        }
 
-    public Gameplay(int START_X, int START_Y, int GAMEPLAY_WIDTH, int GAMEPLAY_HEIGHT)
-    {
-
-        this.setBounds(START_X, START_Y, GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT);
-        this.setBackground(Color.BLUE);
-        this.pressedKeys = new boolean[2];
-
-        blueLabel = new JLabel("0");
-        orangeLabel = new JLabel("0");
-
-        blueLabel.setFont(PIXEL_FONT);
-        orangeLabel.setFont(PIXEL_FONT);
-
-        timeLeft = GAME_DURATION_MS;
-
-        orangeLabel.setBounds(80, 10, 50, 50);
-        blueLabel.setBounds(700, 10, 50, 50);
-
-        orangeLabel.setForeground(new Color(255, 165, 0));
-        blueLabel.setForeground(new Color(0, 0, 255));
-
-        this.setLayout(null);
-        this.add(orangeLabel);
-        this.add(blueLabel);
-
-        Image[] planeImages = {
-                Assets.image(styleOption("BLUE", new Random().nextInt(5) + 1)),
-                Assets.image(styleOption("ORANGE", new Random().nextInt(5) + 1))
-        };
-
-        Image[] bombImages = {
-                Assets.image("/Resource/Bomb/Blue.png"),
-                Assets.image("/Resource/Bomb/Orange.png")
-        };
-
-        planes = new Player[]{
-                new Player(
-                        WIDTH / 2,
-                        WIDTH / 8,
-                        HEIGHT / 4,
-                        planeImages[0].getWidth(null) / 10,
-                        planeImages[0].getHeight(null) / 10,
-                        planeImages[0]
-                ),
-                new Player(
-                WIDTH / 2,
-                WIDTH / 4 * 3,
-                HEIGHT / 4,
-                planeImages[1]
-                        .getWidth(null) / 10,
-                planeImages[1]
-                        .getHeight(null) / 10,
-                planeImages[1]
-        )
-        };
-
-        bombs = new Bomb[]{
-                new Bomb(
-                        planes[0].getX() + planes[0].getWIDTH(),
-                        planes[0].getY() + planes[0].getHEIGHT() / 2,
-                        planeImages[0].getWidth(null) / 40,
-                        planeImages[0].getWidth(null) / 40,
-                        10,
-                        bombImages[0]
-                ),
-                new Bomb(
-                        planes[1].getX(),
-                        planes[1].getY() + planes[1].getHEIGHT() / 2,
-                        planeImages[1].getWidth(null) / 40,
-                        planeImages[1].getWidth(null) / 40,
-                        10,
-                        bombImages[1]
-                )
-        };
-
-
-        this.planes[0].start();this.planes[1].start();
-        this.bombs[0].start();this.bombs[1].start();
-
-        int blue = 0;
-        int orange = 1;
-
-        this.targets = new Target[ROWS][COLUMN];
-
-        initializeTargets();
-
-        this.addKeyListener(this);
-        this.setFocusable(true);
-        this.requestFocus();
-
-        gameTimer = new Timer(1000, e -> {
-            timeLeft -= 1000;
-            if (timeLeft <= 0) {
-                gameTimer.stop();
-                stopGame();
-                determineWinner();
-            }
-            repaint();
+        JButton menu = new JButton("Menu");
+        JButton restart = new JButton("Restart");
+        menu.setBounds(10, 10, 90, 34);
+        pause.setBounds(108, 10, 100, 34);
+        restart.setBounds(216, 10, 100, 34);
+        menu.addActionListener(event -> onMenu.run());
+        pause.addActionListener(event -> togglePause());
+        restart.addActionListener(event -> {
+            controller.startNewGame();
+            pause.setText("Pause");
+            requestFocusInWindow();
         });
-        gameTimer.start();
-        new Thread(() ->
-        {
-            while (running)
-            {
-                repaint();
-                handlePlayerLoop(blue, -20);
-                handlePlayerLoop(orange, WIDTH + 10);
+        add(menu);
+        add(pause);
+        add(restart);
 
-                dropBomb(blue);
-                dropBomb(orange);
-
-                handleBombReturn(blue);
-                handleBombReturn(orange);
-
-                checkCollisions();
-
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-        }).start();
-
-
-        this.addKeyListener(this);
-        this.setFocusable(true);
-        this.requestFocus();
-
-
+        installBindings();
     }
 
-    public void paintComponent(Graphics graphics) {
+    private void bind(int key, boolean released, String name, Runnable callback) {
+        InputMap input = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actions = getActionMap();
+        input.put(KeyStroke.getKeyStroke(key, 0, released), name);
+        actions.put(name, new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent event) {
+                callback.run();
+            }
+        });
+    }
+
+    private void installBindings() {
+        bind(KeyEvent.VK_ENTER, false, "blue-down", () -> model.pressFire(0));
+        bind(KeyEvent.VK_ENTER, true, "blue-up", () -> model.releaseFire(0));
+        bind(KeyEvent.VK_SPACE, false, "orange-down", () -> model.pressFire(1));
+        bind(KeyEvent.VK_SPACE, true, "orange-up", () -> model.releaseFire(1));
+        bind(KeyEvent.VK_P, false, "pause-toggle", this::togglePause);
+    }
+
+    public void startGame() {
+        controller.startNewGame();
+    }
+
+    public void pauseGame() {
+        controller.pause();
+        if (model.state() == GameState.PAUSED) {
+            pause.setText("Resume");
+        }
+    }
+
+    public void resumeGame() {
+        controller.resume();
+        if (model.state() == GameState.RUNNING) {
+            pause.setText("Pause");
+            requestFocusInWindow();
+        }
+    }
+
+    public void togglePause() {
+        if (model.state() == GameState.RUNNING) {
+            pauseGame();
+        } else if (model.state() == GameState.PAUSED) {
+            resumeGame();
+        }
+    }
+
+    public void disposeGame() { controller.dispose(); }
+    public GameModel model() { return model; }
+    public boolean timerRunning() { return controller.timerRunning(); }
+
+    @Override protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
-
-        // Paint the background first
-        graphics.drawImage(background, 0, 0, null);
-        // Paint other components
-        this.planes[0].paint(graphics);
-        this.planes[1].paint(graphics);
-        this.bombs[0].paint(graphics);
-        this.bombs[1].paint(graphics);
-        for (int i = 0; i < ROWS; i++) {
-            for (int j = 0; j < COLUMN; j++) {
-                this.targets[i][j].draw(graphics);
-            }
-        }
-        graphics.setFont(PIXEL_FONT);
-        graphics.setColor(Color.WHITE);
-        graphics.drawString(Integer.toString(timeLeft / 1000), WIDTH / 2 - 10, WIDTH / 20);
-    }
-
-    private void determineWinner() {
-        if (orangeScore > blueScore) {
-            JOptionPane.showMessageDialog(this, "Orange wins!");
-        } else if (blueScore > orangeScore) {
-            JOptionPane.showMessageDialog(this, "Blue wins!");
-        } else {
-            JOptionPane.showMessageDialog(this, "It's a tie!");
-        }
-    }
-
-    private void initializeTargets() {
-        Target baseTarget = new Target(
-                2,
-                HEIGHT / 16 * 11,
-                20,
-                20,
-                1,
-                Assets.image("/Resource/Target/1.png")
-        );
-
-        int numberType = 1;
-
-        for (int i = 0; i < ROWS; i++) {
-            if(i % 2 == 0 && i != 0){
-                numberType++;
-            }
-            for (int j = 0; j < COLUMN; j++) {
-                Target target = new Target(
-                        j * (baseTarget.getX() + baseTarget.getHEIGHT()),
-                        baseTarget.getY() + (i * baseTarget.getWIDTH()),
-                        20,
-                        20,
-                        numberType,
-                        Assets.image("/Resource/Target/" + numberType + ".png")
-                );
-                this.targets[i][j] = target;
-                this.targets[i][j].start();
-            }
-        }
-    }
-
-    private void handlePlayerLoop(int color, int startingPoint) {
-        if (this.planes[0].getX() > getWidth() &&
-                (this.bombs[0].getX() > getWidth() && this.bombs[0].getY() == this.planes[0].getY())) {
-            this.planes[0].setX(-20);
-            this.bombs[0].setX(planes[0].getX() + planes[0].getWIDTH());
-        } else if (this.planes[1].getX() < -20 &&
-                (this.bombs[1].getX() < -20 && this.bombs[1].getY() == this.planes[1].getY())) {
-            this.planes[1].setX(WIDTH + 20);
-            this.bombs[1].setX(planes[1].getX());
-        }
-    }
-
-    private void dropBomb(int bombIndex) {
-        if (this.pressedKeys[bombIndex]) {
-            if (bombIndex == 0) {
-                this.bombs[bombIndex].moveRight();
-            } else if (bombIndex == 1) {
-                this.bombs[bombIndex].moveLeft();
-            }
-            this.bombs[bombIndex].setSleep(40);
-        }
-    }
-
-    private void handleBombReturn(int bombIndex) {
-        if (this.bombs[bombIndex].getY() == getHeight()) {
-            this.bombs[bombIndex].reload(planes[bombIndex].getX(), planes[bombIndex].getY());
-            this.bombs[bombIndex].setSleep(10);
-            if (bombIndex == 0) {
-                this.pressedKeys[ENTER] = false;
-                if (this.bombs[bombIndex].getX() == getWidth()) {
-                    this.bombs[bombIndex].setX(planes[bombIndex].getX() + planes[bombIndex].getWIDTH());
-                }
-            } else if (bombIndex == 1) {
-                this.pressedKeys[SPACE] = false;
-                if (this.bombs[bombIndex].getX() == -10) {
-                    this.bombs[bombIndex].setX(planes[bombIndex].getX());
+        Graphics2D g = (Graphics2D) graphics.create();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
+            for (Target target : model.targets()) {
+                if (!target.isDestroyed()) {
+                    g.drawImage(targetImages[target.value() - 1],
+                            target.x(), target.y(), target.width(), target.height(), this);
                 }
             }
-        }
-    }
-
-    private void checkCollisions() {
-        Rectangle blueBombRec = this.bombs[0].calculateRectangle();
-        Rectangle orangeBombRec = this.bombs[1].calculateRectangle();
-        for (int i = 0; i < ROWS; i++) {
-            for (int j = 0; j < COLUMN; j++) {
-                Rectangle targetRect = this.targets[i][j].calculateRectangle();
-
-                handleCollision(0, blueBombRec, targetRect, i, j);
-                handleCollision(1, orangeBombRec, targetRect, i, j);
-                checkReload(0, ENTER, this.bombs[0], this.planes[0]);
-                checkReload(1, SPACE, this.bombs[1], this.planes[1]);
-
+            for (int i = 0; i < 2; i++) {
+                Player player = model.player(i);
+                g.drawImage(planes[i], (int) player.x(), (int) player.y(),
+                        player.width(), player.height(), this);
+                Bomb bomb = model.bomb(i);
+                if (bomb.isActive()) {
+                    g.drawImage(bombImages[i], (int) bomb.x(), (int) bomb.y(),
+                            bomb.size(), bomb.size(), this);
+                }
             }
-        }
-    }
 
-    private void checkReload(int index, int key, Bomb bomb, Player plane) {
-        if (index == 0 && blueChecker == 8) {
-            blueChecker = 0;
-            bomb.reload(plane.getX(), plane.getY());
-            this.pressedKeys[key] = false;
-            bomb.setSleep(10);
-        } else if (index == 1 && orangeChecker == 8) {
-            orangeChecker = 0;
-            bomb.reload(plane.getX(), plane.getY());
-            this.pressedKeys[key] = false;
-            bomb.setSleep(10);
-        }
-    }
+            g.setFont(hudFont);
+            g.setColor(new Color(255, 169, 47));
+            g.drawString("Orange: " + model.score(1), 24, 92);
+            g.setColor(new Color(98, 183, 255));
+            g.drawString("Blue: " + model.score(0), 560, 92);
+            g.setColor(Color.WHITE);
+            g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 334, 130);
 
-    private void handleCollision(int bombIndex, Rectangle bombRect, Rectangle targetRect, int i, int j) {
-        if (Utils.checkCollision(bombRect, targetRect)) {
-            int targetNumber = this.targets[i][j].getNumber(); // Get the number from the original targets
-
-            this.targets[i][j].setSTART_X(0);
-            this.targets[i][j].setSTART_Y(0);
-            this.targets[i][j].setWIDTH(0);
-            this.targets[i][j].setHEIGHT(0);
-            this.targets[i][j].setNumber(0);
-            this.targets[i][j].setImage(Assets.image("/Resource/Target/1.png"));
-
-            if (bombIndex == 0) {
-                blueChecker++;
-                blueScore += targetNumber; // Use the original targets number
-                blueLabel.setText(Integer.toString(blueScore));
-            } else if (bombIndex == 1) {
-                orangeChecker++;
-                orangeScore += targetNumber; // Use the original targets number
-                orangeLabel.setText(Integer.toString(orangeScore));
+            if (model.state() == GameState.PAUSED || model.state() == GameState.RESULTS) {
+                g.setColor(new Color(0, 0, 0, 170));
+                g.fillRect(80, 290, 640, 130);
+                g.setColor(Color.WHITE);
+                g.setFont(hudFont.deriveFont(32f));
+                String message = model.state() == GameState.PAUSED ? "Paused" : model.resultText();
+                int offset = g.getFontMetrics().stringWidth(message) / 2;
+                g.drawString(message, 400 - offset, 370);
             }
-        }
-    }
-
-    public void stopGame() {
-        running = false;
-    }
-
-    private String styleOption(String color, int type){
-        return "/Resource/Player/" + color + "_TEAM/option" + type + ".png";
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        Integer toPress = null;
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            toPress = ENTER;
-        } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-            toPress = SPACE;
-        }
-        if (toPress != null){
-            this.pressedKeys[toPress] =true;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        Integer toRelease = null;
-        if (this.bombs[0].getY() == HEIGHT) {
-            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                toRelease = ENTER;
-            }
-        } else if (this.bombs[1].getY() == HEIGHT) {
-            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                toRelease = SPACE;
-            }
-        }
-        if (toRelease != null) {
-            this.pressedKeys[toRelease] = false;
+        } finally {
+            g.dispose();
         }
     }
 }

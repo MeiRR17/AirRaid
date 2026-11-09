@@ -1,13 +1,10 @@
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 
-public class Main {
+/** Desktop entry point: all UI creation is confined to the Swing EDT. */
+public final class Main {
+    private Main() {}
+
     public static void main(String[] args) {
-        /*Main Class*/
-        SwingUtilities.invokeLater(() -> {
-            Window window = new Window(Assets.image("/Resource/General/background.png"));
-            window.showWindow();
-            RulesWindow rules = new RulesWindow();
-            rules.showWindow();
-        });
+        SwingUtilities.invokeLater(() -> new Window().showWindow());
     }
 }

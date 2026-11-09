@@ -1,44 +1,53 @@
 # AirRaid
 
-**AirRaid** is an offline, local two-player Java Swing arcade game, not an emergency alert application. Two automatically moving planes compete to destroy targets worth 1–4 points.
+AirRaid is an **offline two-player desktop arcade game** written in Java 21 and Swing. It is not an emergency-alert service.
 
-> Version **0.1.0 build foundation**: the source layout, Maven build and resource loading have been modernized. This is not a production release. Known game-loop and rules defects remain for later milestones.
+**Current milestone: v0.2.0 — deterministic game engine and lifecycle.** It is a development build, not a production release.
 
-## Build and play
+## Build and run
 
-Requirements: **JDK 21** and **Maven 3.9+**. From the repository root:
+Requires **JDK 21** and **Maven 3.9+**:
 
 ```sh
-mvn clean verify
-java -jar target/airraid-0.1.0.jar
+mvn -B -ntp clean verify
+java -jar target/airraid-0.2.0.jar
 ```
 
-Maven compiles the sources in `src/main/java`, packages the graphics/fonts from `src/main/resources/Resource`, and runs headless resource-loading tests. No IDE or repository working directory is required to run the generated JAR. Desktop GUI needs a graphical session; unit tests run headlessly.
+The JAR includes all original graphics and fonts. A desktop graphical session is required to play; engine and resource tests run headlessly. The CI build also launches the game under a virtual display to check the GUI lifecycle.
 
-### Controls
+## Controls and game flow
 
-| Player | Fire |
+| Player | Key |
 | --- | --- |
-| Blue | **Enter** |
-| Orange | **Space** |
+| Blue | Enter — fire |
+| Orange | Space — fire |
+| Either | P — pause/resume |
 
-The current source uses a 60-second match. The older project instructions also mention losing after four canyon hits, but that logic is not consistently implemented. v0.3.0 will establish a canonical rule set.
+Use **Start** to begin, **Pause/Resume** to control the simulation, **Restart** for a fresh match, and **Menu** to stop and return to the title screen. Each player has at most one active bomb. Targets score 1–4 points once each. The existing time limit is 60 seconds; when the time expires the winner/tie is displayed.
 
-## Roadmap and tracking
+### Architecture
 
-- [Versioned roadmap — v0.1.0 through v1.0.0](docs/ROADMAP.md)
-- [Baseline audit and known issues](docs/BASELINE_AUDIT.md)
-- [Production release checklist](docs/RELEASE_CHECKLIST.md)
-- [Progress tracking issue #3](https://github.com/MeiRR17/AirRaid/issues/3)
+- `GameModel` owns the simulation state, planes, bombs, targets, scoring and fixed time steps. It is deterministic and has **no background worker threads**.
+- `GameController` drives a **single Swing Timer** on the EDT, and controls start/pause/resume/disposal.
+- `Gameplay` renders from the model and maps keyboard actions to model input. `Window` owns menu/game transitions and disposes old simulations.
+- `Assets` loads original binary media from the classpath; the Maven build embeds it in the runnable JAR.
 
-Next: **v0.2.0 — deterministic engine, safe game lifecycle and thread safety**. In particular, the legacy planes and bombs still run background threads; this milestone does not claim to fix them.
+**Known limits:** four-canyon-hit rule in the old `Instructions/About` does not yet match the game engine (v0.3.0); final polishing, accessibility and installer packaging are later milestones. This version intentionally does **not** claim public production readiness. No network accounts are needed.
 
-## Game screenshots (from the original project)
+## Plans and evidence
 
-![Original gameplay screenshot](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
+- [Production roadmap](docs/ROADMAP.md)
+- [Legacy baseline audit](docs/BASELINE_AUDIT.md)
+- [v0.2.0 engine implementation notes](docs/V0_2_IMPLEMENTATION.md)
+- [Release gates](docs/RELEASE_CHECKLIST.md)
+- [Version tracker](https://github.com/MeiRR17/AirRaid/issues/3)
 
-![Original game screenshot](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
+## Screenshots from the original project (not this new build)
 
-## Distribution and licensing
+![Original AirRaid game](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
 
-There is currently no approved production installer. Before distributing third-party fonts or artwork publicly, verify the respective rights and add license/attribution metadata. See `docs/RELEASE_CHECKLIST.md`.
+![Original AirRaid game](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
+
+## Licensing
+
+Before redistributing bundled images, animation or fonts in a public binary, verify each asset's rights and attribution. See the release checklist.
