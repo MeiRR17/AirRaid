@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.9.0 — internal beta stabilization.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
+**Current development version: v0.9.1 — internal beta QA reporting and usability patch.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
 
 ## Build and play
 
@@ -10,7 +10,7 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.9.0.jar
+java -jar target/airraid-0.9.1.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
@@ -30,6 +30,14 @@ For **internal QA only**, pass `--installer` to also create an **unsigned** host
 
 See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
 
+## Offline QA report — new in v0.9.1
+
+After a complete round, the results screen offers **Copy QA report**. It copies a text summary containing the beta version, outcome, reason, scores, canyon strikes, time remaining, sound preference and reduced-motion setting. Copying requires an explicit button click, sends nothing over the network and creates no log or file. The report deliberately contains **no names, home paths, timestamps, device IDs or account information**. If the clipboard is unavailable, the results screen displays an explanation without crashing or losing the match.
+
+This local report is useful when submitting a beta bug report. It is **not evidence of a completed human playtest** and does not satisfy the independent three-session acceptance gate. The GUI smoke now captures the **real Results screen** as well as Settings and gameplay. Run `java -jar target/airraid-0.9.1.jar --version` to print the beta version without opening the GUI.
+
+Implementation and tests: [v0.9.1 QA reporting](docs/V0_9_1_IMPLEMENTATION.md).
+
 ## Beta stabilization (v0.9.0)
 
 - The Swing match timer now advances from **monotonic elapsed time**, rather than assuming each GUI callback represents exactly 16 ms. Coalesced or delayed UI callbacks no longer silently extend the nominal 60-second match; pausing and restarting reset the time baseline.
@@ -44,7 +52,7 @@ Development evidence commands:
 ```sh
 mvn -B -ntp clean verify
 python3 -m unittest discover -s tools -p 'test_*.py' -v
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.0.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.1.jar
 python3 tools/beta_gate.py --mode development
 ```
 
@@ -98,7 +106,7 @@ Development commands (after `mvn clean verify`):
 ```sh
 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/dependency_inventory.py --pom pom.xml
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.0.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.1.jar
 ```
 
 The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.

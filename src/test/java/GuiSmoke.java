@@ -72,7 +72,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v090-ci-" + screen + ".png");
+        File output = new File("target/airraid-v091-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -87,7 +87,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v090-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v091-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -104,7 +104,7 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
-            check(hasText(app.getContentPane(), "BETA 0.9.0"),
+            check(hasText(app.getContentPane(), "BETA 0.9.1"),
                     "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
@@ -151,7 +151,7 @@ public final class GuiSmoke {
                     "Arena must remain square on resized window");
             app.setSize(960, 800);
             app.validate();
-            check(hasText(app.getContentPane(), "BETA 0.9.0"),
+            check(hasText(app.getContentPane(), "BETA 0.9.1"),
                     "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
             check(button(app.getContentPane(), "Sound: Off") != null
@@ -211,6 +211,17 @@ public final class GuiSmoke {
                     check(finishedGame.resultsVisible(), "Results card did not appear");
                     check(!finishedGame.timerRunning(), "Timer remained active after results");
                     check("It's a tie!".equals(finishedGame.resultText()), "Tie summary missing");
+                    String report = finishedGame.completedQaReport();
+                    check(report != null && report.contains("Winner: DRAW")
+                            && report.contains("NOT verified human playtest evidence"),
+                            "QA report must reflect the completed match");
+                    JButton copy = button(finishedGame, "Copy QA report");
+                    check(copy != null, "Offline QA report action missing");
+                    copy.doClick();
+                    captureScreenshot(app, "results");
+                    check(finishedGame.model().state() == GameState.RESULTS
+                            && !finishedGame.timerRunning(),
+                            "Copying QA summary must never restart gameplay");
                     JButton replay = button(finishedGame, "Play again");
                     check(replay != null, "Play again action missing");
                     replay.doClick();

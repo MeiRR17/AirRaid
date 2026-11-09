@@ -13,6 +13,9 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.Toolkit;
+import java.awt.HeadlessException;
+import java.awt.datatransfer.StringSelection;
 import java.util.function.Consumer;
 
 /**
@@ -85,7 +88,7 @@ public final class Gameplay extends JPanel {
         toolbar.add(soundButton);
         add(toolbar, BorderLayout.NORTH);
 
-        results = new ResultsScreen(this::restartGame, onMenu);
+        results = new ResultsScreen(this::restartGame, onMenu, this::copyQaReport);
         centerCards.add(canvas, ARENA);
         centerCards.add(results, RESULTS);
         add(centerCards, BorderLayout.CENTER);
@@ -159,7 +162,8 @@ public final class Gameplay extends JPanel {
                 + " strikes     ORANGE " + model.score(1) + " pts / "
                 + model.canyonStrikes(1) + " strikes     "
                 + ((model.timeRemainingMs() + 999) / 1000) + "s     "
-                + model.state() + "     BETA 0.9.0     Audio "
+                + model.state() + "     BETA " + AppVersion.NUMBER
+                + "     Audio "
                 + (sound.isEnabled() ? "ON" : "OFF")
                 + (preferences.reducedMotion() ? "     Reduced motion" : "");
         if (!message.equals(status.getText())) status.setText(message);
@@ -188,8 +192,19 @@ public final class Gameplay extends JPanel {
         onPreferenceChange.accept(preferences.withSound(!preferences.soundEnabled()));
     }
 
+    private boolean copyQaReport(String report) {
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                    new StringSelection(report), null);
+            return true;
+        } catch (HeadlessException | IllegalStateException | SecurityException unavailable) {
+            // Do not log local clipboard contents or abort the round.
+            return false;
+        }
+    }
+
     private void onRoundFinished() {
-        results.showResult(model);
+        results.showResult(model, preferences);
         centerNavigation.show(centerCards, RESULTS);
         showingResults = true;
         pauseButton.setText("Pause");
@@ -232,4 +247,5 @@ public final class Gameplay extends JPanel {
     public GameCanvas canvas() { return canvas; }
     public boolean soundEnabled() { return sound.isEnabled(); }
     public UserPreferences appliedPreferences() { return preferences; }
+    public String completedQaReport() { return results.reportText(); }
 }

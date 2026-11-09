@@ -38,7 +38,7 @@ public final class GameOpening extends JPanel {
         JPanel titles = new JPanel(new BorderLayout());
         titles.setOpaque(false);
         titles.add(heading, BorderLayout.CENTER);
-        JLabel betaLabel = new JLabel("BETA 0.9.0 - INTERNAL PLAYTEST BUILD",
+        JLabel betaLabel = new JLabel(AppVersion.MENU_LABEL,
                 SwingConstants.CENTER);
         betaLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
         betaLabel.setForeground(new Color(190, 216, 237));

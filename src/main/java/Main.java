@@ -5,6 +5,10 @@ public final class Main {
     private Main() {}
 
     public static void main(String[] args) {
+        if (args != null && args.length == 1 && "--version".equals(args[0])) {
+            System.out.println("AirRaid " + AppVersion.NUMBER + " / " + AppVersion.CHANNEL);
+            return;
+        }
         if (args != null && args.length == 1 && "--self-test".equals(args[0])) {
             try {
                 // Headless package smoke: prove native launcher, embedded JVM and
