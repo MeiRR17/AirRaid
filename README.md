@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.7.0 — quality, security and release-readiness safeguards.** Public native installers and the production release remain pending.
+**Current development version: v0.8.0 — native desktop packaging foundation.** The game can be packaged with its own Java runtime, but packages are internal QA builds. Public installers and production release approval remain blocked.
 
 ## Build and play
 
@@ -10,10 +10,25 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.7.0.jar
+java -jar target/airraid-0.8.0.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
+
+## Desktop packages (new in v0.8.0)
+
+Build the executable JAR first, then create a native application image with a **bundled Java 21 runtime** (no separate JVM required for the launcher):
+
+```sh
+mvn -B -ntp clean verify
+python3 tools/package_desktop.py --mode development --output target/desktop-qa
+```
+
+The packaging script uses the host's JDK 21 `jpackage` tool and creates the application image under `target/desktop-qa/images/`. It verifies the bundled native launcher with `--self-test`, checks the included runtime modules and the exact input JAR SHA-256, and writes `target/desktop-evidence-<platform>.json`.
+
+For **internal QA only**, pass `--installer` to also create an **unsigned** host-native installer: Linux `.deb`, macOS `.dmg`, or Windows `.exe`. These builds are **not published or uploaded** because artwork/font licensing and source-code approval remain unresolved. The regular PR CI tests a Linux `.deb`; the opt-in [three-platform packaging workflow](.github/workflows/desktop-packages.yml) can run app-image verification on macOS and Windows as well. Cross-platform clean installation and uninstall tests are **not yet certified**.
+
+See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
 
 ## Keyboard controls
 
@@ -63,7 +78,7 @@ Development commands (after `mvn clean verify`):
 ```sh
 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/dependency_inventory.py --pom pom.xml
-python3 tools/release_gate.py --mode development --jar target/airraid-0.7.0.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.8.0.jar
 ```
 
 The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.
@@ -81,7 +96,7 @@ Tests cover settings round trips, schema corruption/invalid values, safe default
 - [Visual asset license inventory](docs/ASSET_LICENSE_AUDIT.md)
 - [Public release blocker — 23 unverified visual assets](https://github.com/MeiRR17/AirRaid/issues/9)
 
-**Next:** v0.8.0 installable native packaging and platform verification, while unresolved v0.7.0 legal/security gates stay open; then, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
+**Next:** v0.9.0 beta and real two-player playtesting, while v0.5/v0.7 license and security gates plus v0.8 cross-OS install/uninstall certification remain open; then, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
 
 ## Historical screenshots (original game, not this version)
 

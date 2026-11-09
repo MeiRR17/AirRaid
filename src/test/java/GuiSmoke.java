@@ -60,7 +60,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v070-ci-" + screen + ".png");
+        File output = new File("target/airraid-v080-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -75,7 +75,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v070-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v080-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
