@@ -28,6 +28,8 @@ public final class Gameplay extends JPanel {
     private final JPanel centerCards = new JPanel(centerNavigation);
     private final JLabel status = new JLabel();
     private final JButton pauseButton = new JButton("Pause");
+    private final JButton soundButton = new JButton("Sound: Off");
+    private final SoundEffects sound = new SoundEffects();
     private final ResultsScreen results;
     private final GameController controller;
     private final Runnable onMenu;
@@ -46,12 +48,16 @@ public final class Gameplay extends JPanel {
         pauseButton.addActionListener(event -> togglePause());
         restartButton.addActionListener(event -> restartGame());
         rulesButton.addActionListener(event -> onRules.run());
+        soundButton.addActionListener(event -> toggleSound());
+        soundButton.setToolTipText("Optional original audio feedback; off by default (M)");
+        soundButton.getAccessibleContext().setAccessibleDescription(
+                "Toggle synthesized game sound. Disabled by default.");
 
         // These buttons are reachable by labelled shortcuts; keeping them out of
         // the tab focus path avoids Swing consuming Space/Enter as button clicks
         // instead of the two players' fire commands.
         for (JButton button : new JButton[] {
-                menuButton, pauseButton, restartButton, rulesButton
+                menuButton, pauseButton, restartButton, rulesButton, soundButton
         }) {
             button.setFocusable(false);
             button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
@@ -62,6 +68,7 @@ public final class Gameplay extends JPanel {
         toolbar.add(pauseButton);
         toolbar.add(restartButton);
         toolbar.add(rulesButton);
+        toolbar.add(soundButton);
         add(toolbar, BorderLayout.NORTH);
 
         results = new ResultsScreen(this::restartGame, onMenu);
@@ -102,12 +109,14 @@ public final class Gameplay extends JPanel {
         bind(KeyEvent.VK_R, false, "restart", this::restartGame);
         bind(KeyEvent.VK_H, false, "rules", onRules);
         bind(KeyEvent.VK_ESCAPE, false, "menu", onMenu);
+        bind(KeyEvent.VK_M, false, "sound", this::toggleSound);
     }
 
     public void startGame() { restartGame(); }
 
     public void restartGame() {
         controller.startNewGame();
+        canvas.clearFeedback();
         showingResults = false;
         centerNavigation.show(centerCards, ARENA);
         pauseButton.setText("Pause");
@@ -116,13 +125,41 @@ public final class Gameplay extends JPanel {
     }
 
     private void refresh() {
+        // The model publishes only small immutable feedback events. No extra
+        // simulation thread, sound file or render-time disk I/O is introduced.
+        canvas.advanceFeedback();
+        for (GameModel.Feedback feedback : model.drainFeedback()) {
+            canvas.showFeedback(feedback);
+            if (feedback.type() == GameModel.FeedbackType.SHOT) {
+                sound.play(SoundEffects.Cue.SHOT);
+            } else if (feedback.type() == GameModel.FeedbackType.TARGET_HIT) {
+                sound.play(SoundEffects.Cue.HIT);
+            } else if (feedback.type() == GameModel.FeedbackType.CANYON_MISS) {
+                sound.play(SoundEffects.Cue.MISS);
+            } else if (feedback.type() == GameModel.FeedbackType.ROUND_FINISHED) {
+                sound.play(SoundEffects.Cue.ROUND_END);
+            }
+        }
         String message = "BLUE " + model.score(0) + " pts / " + model.canyonStrikes(0)
                 + " strikes     ORANGE " + model.score(1) + " pts / "
                 + model.canyonStrikes(1) + " strikes     "
                 + ((model.timeRemainingMs() + 999) / 1000) + "s     "
-                + model.state();
+                + model.state() + "     Audio " + (sound.isEnabled() ? "ON" : "OFF");
         if (!message.equals(status.getText())) status.setText(message);
         canvas.repaint();
+    }
+
+    private void toggleSound() {
+        if (sound.isEnabled()) {
+            sound.setEnabled(false);
+            soundButton.setText("Sound: Off");
+        } else if (sound.setEnabled(true)) {
+            soundButton.setText("Sound: On");
+        } else {
+            soundButton.setText("Audio unavailable");
+            soundButton.setToolTipText("No usable audio output device on this computer");
+        }
+        refresh();
     }
 
     private void onRoundFinished() {
@@ -157,10 +194,15 @@ public final class Gameplay extends JPanel {
         else requestFocusInWindow();
     }
 
-    public void disposeGame() { controller.dispose(); }
+    public void disposeGame() {
+        controller.dispose();
+        sound.close();
+        canvas.clearFeedback();
+    }
     public GameModel model() { return model; }
     public boolean timerRunning() { return controller.timerRunning(); }
     public boolean resultsVisible() { return showingResults; }
     public String resultText() { return results.outcomeText(); }
     public GameCanvas canvas() { return canvas; }
+    public boolean soundEnabled() { return sound.isEnabled(); }
 }

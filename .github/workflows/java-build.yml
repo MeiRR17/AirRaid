@@ -29,9 +29,9 @@ jobs:
         run: mvn -B -ntp --no-transfer-progress clean verify
       - name: Check packaged JAR
         run: |
-          test -f target/airraid-0.4.0.jar
-          jar tf target/airraid-0.4.0.jar | grep -F 'Resource/General/background.png'
-          jar tf target/airraid-0.4.0.jar | grep -F 'Main.class'
+          test -f target/airraid-0.5.0.jar
+          jar tf target/airraid-0.5.0.jar | grep -F 'Resource/General/background.png'
+          jar tf target/airraid-0.5.0.jar | grep -F 'Main.class'
       - name: GUI launch smoke under virtual display
         run: |
           if ! command -v xvfb-run >/dev/null 2>&1; then
@@ -39,3 +39,10 @@ jobs:
             sudo apt-get install -y xvfb
           fi
           xvfb-run -a timeout 20s java -cp target/classes:target/test-classes GuiSmoke
+      - name: Publish actual game screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: airraid-v050-gui-capture
+          path: target/airraid-v050-ci-gameplay.png
+          if-no-files-found: error
+          retention-days: 7
