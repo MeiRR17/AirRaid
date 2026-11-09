@@ -53,6 +53,9 @@ public final class ResultsScreen extends JPanel {
         reportStatus.setForeground(new Color(190, 218, 238));
         reportStatus.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         reportStatus.setAlignmentX(CENTER_ALIGNMENT);
+        // The status changes after a user copies a report. Give BoxLayout
+        // enough horizontal space for the longer confirmation message.
+        reportStatus.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         reportStatus.getAccessibleContext().setAccessibleName("QA report status");
         center.add(reportStatus);
         add(center, BorderLayout.CENTER);
@@ -75,6 +78,8 @@ public final class ResultsScreen extends JPanel {
             reportStatus.setText(copied
                     ? "Report copied. Paste it into a beta bug report."
                     : "Clipboard unavailable. No report was transmitted.");
+            reportStatus.revalidate();
+            reportStatus.repaint();
         });
         controls.add(replay);
         controls.add(copyReport);
