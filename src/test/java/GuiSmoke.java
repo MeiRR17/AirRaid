@@ -195,6 +195,11 @@ public final class GuiSmoke {
                     "Held P key must pause once rather than rapidly toggle");
             check("STATE PAUSED".equals(game.hudCell(3)),
                     "Accessible game state must show paused");
+            JButton resumeButton = button(game, "Resume");
+            check(resumeButton != null && resumeButton.getWidth()
+                    >= resumeButton.getFontMetrics(resumeButton.getFont())
+                            .stringWidth("Resume") + 20,
+                    "Resume button label must not clip after Pause changes its text");
             captureScreenshot(app, "paused");
             key(game, KeyEvent.VK_P, true);
             action(game, KeyEvent.VK_P);
