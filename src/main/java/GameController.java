@@ -35,15 +35,25 @@ public final class GameController {
     /** Also used in headless EDT tests to simulate coalesced display frames. */
     void poll() {
         assertEdt();
+        // A deterministic test or a synchronous model action may finish the
+        // match before the next scheduled Swing Timer event. Deliver results
+        // once even if no elapsed milliseconds remain for this callback.
+        if (model.state() == GameState.RESULTS) {
+            deliverResultsOnce();
+            return;
+        }
         if (model.state() != GameState.RUNNING) return;
         int elapsed = clock.elapsedMilliseconds();
         if (elapsed <= 0) return;
         model.tick(elapsed);
         afterTick.run();
-        if (model.state() == GameState.RESULTS) {
-            timer.stop();
-            onResults.run();
-        }
+        if (model.state() == GameState.RESULTS) deliverResultsOnce();
+    }
+
+    private void deliverResultsOnce() {
+        if (!timer.isRunning()) return;
+        timer.stop();
+        onResults.run();
     }
 
     public void startNewGame() {
