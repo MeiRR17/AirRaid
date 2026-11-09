@@ -74,5 +74,8 @@ public final class GuiSmoke {
             frame.dispose();
             System.out.println("AIRRAID_GUI_SMOKE_PASS");
         });
+        // ImageIcon GIF animation is managed by AWT; terminate only after the
+        // asserted simulation timer has stopped and the JFrame is disposed.
+        System.exit(0);
     }
 }
