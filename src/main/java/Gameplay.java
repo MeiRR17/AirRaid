@@ -107,7 +107,7 @@ public final class Gameplay extends JPanel {
                 "Sound and reduced motion status", "Development build version"};
         for (int index = 0; index < hudLabels.length; index++) {
             JLabel label = new JLabel("", JLabel.CENTER);
-            label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+            label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
             label.setForeground(index == 0 ? new Color(129, 205, 255)
                     : index == 1 ? new Color(255, 185, 123) : Color.WHITE);
             label.getAccessibleContext().setAccessibleName(names[index]);
@@ -174,9 +174,9 @@ public final class Gameplay extends JPanel {
                 sound.play(SoundEffects.Cue.ROUND_END);
             }
         }
-        setHud(0, "BLUE " + model.score(0) + " pts  /  "
+        setHud(0, "BLUE " + model.score(0) + " pts / "
                 + model.canyonStrikes(0) + " strikes");
-        setHud(1, "ORANGE " + model.score(1) + " pts  /  "
+        setHud(1, "ORANGE " + model.score(1) + " pts / "
                 + model.canyonStrikes(1) + " strikes");
         setHud(2, "TIME " + ((model.timeRemainingMs() + 999) / 1000) + "s");
         setHud(3, "STATE " + model.state());
