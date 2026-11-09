@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.8.0 — native desktop packaging foundation.** The game can be packaged with its own Java runtime, but packages are internal QA builds. Public installers and production release approval remain blocked.
+**Current development version: v0.9.0 — internal beta stabilization.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
 
 ## Build and play
 
@@ -10,7 +10,7 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.8.0.jar
+java -jar target/airraid-0.9.0.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
@@ -26,9 +26,29 @@ python3 tools/package_desktop.py --mode development --output target/desktop-qa
 
 The packaging script uses the host's JDK 21 `jpackage` tool and creates the application image under `target/desktop-qa/images/`. It verifies the bundled native launcher with `--self-test`, checks the included runtime modules and the exact input JAR SHA-256, and writes `target/desktop-evidence-<platform>.json`.
 
-For **internal QA only**, pass `--installer` to also create an **unsigned** host-native installer: Linux `.deb`, macOS `.dmg`, or Windows `.exe`. These builds are **not published or uploaded** because artwork/font licensing and source-code approval remain unresolved. The regular PR CI tests a Linux `.deb`; the opt-in [three-platform packaging workflow](.github/workflows/desktop-packages.yml) can run app-image verification on macOS and Windows as well. Cross-platform clean installation and uninstall tests are **not yet certified**.
+For **internal QA only**, pass `--installer` to also create an **unsigned** host-native installer: Linux `.deb`, macOS `.dmg`, or Windows `.exe`. These builds are **not published or uploaded** because artwork/font licensing and source-code approval remain unresolved. The regular PR CI verifies a Linux app image and its bundled launcher; the opt-in [three-platform packaging workflow](.github/workflows/desktop-packages.yml) can run app-image verification on macOS and Windows as well. Cross-platform clean installation and uninstall tests are **not yet certified**.
 
 See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
+
+## Beta stabilization (v0.9.0)
+
+- The Swing match timer now advances from **monotonic elapsed time**, rather than assuming each GUI callback represents exactly 16 ms. Coalesced or delayed UI callbacks no longer silently extend the nominal 60-second match; pausing and restarting reset the time baseline.
+- The Java test suite exercises **ten simulated complete matches**, repeated restarts, two-player key contention, pause/resume timing and one-time match endings. These are automated model tests, **not** human playtests.
+- Real human playtest acceptance is tracked through `tools/beta_gate.py`. Until three documented sessions, a two-human one-keyboard test, complete Windows/macOS/Linux install/play/uninstall verification, zero triaged P0/P1 defects and legal permission are recorded, `target/beta-readiness.json` correctly reports **not ready**.
+- The title screen and in-game status clearly identify **Beta 0.9.0**. CI captures real Java Swing screenshots; no public beta installers or release tags are published.
+
+See [beta playtest matrix](docs/BETA_PLAYTEST_PLAN.md), [troubleshooting/support](docs/BETA_TROUBLESHOOTING.md), [implementation evidence](docs/V0_9_IMPLEMENTATION.md) and the [beta bug report template](.github/ISSUE_TEMPLATE/beta-bug-report.yml).
+
+Development evidence commands:
+
+```sh
+mvn -B -ntp clean verify
+python3 -m unittest discover -s tools -p 'test_*.py' -v
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.0.jar
+python3 tools/beta_gate.py --mode development
+```
+
+The separate `--mode beta` command **fails closed** while human/legal evidence is absent. Do not use a synthetic test fixture to claim a real user session.
 
 ## Keyboard controls
 
@@ -78,7 +98,7 @@ Development commands (after `mvn clean verify`):
 ```sh
 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/dependency_inventory.py --pom pom.xml
-python3 tools/release_gate.py --mode development --jar target/airraid-0.8.0.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.0.jar
 ```
 
 The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.
@@ -96,7 +116,7 @@ Tests cover settings round trips, schema corruption/invalid values, safe default
 - [Visual asset license inventory](docs/ASSET_LICENSE_AUDIT.md)
 - [Public release blocker — 23 unverified visual assets](https://github.com/MeiRR17/AirRaid/issues/9)
 
-**Next:** v0.9.0 beta and real two-player playtesting, while v0.5/v0.7 license and security gates plus v0.8 cross-OS install/uninstall certification remain open; then, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
+**Next:** complete real human beta acceptance and remaining v0.5/v0.7 rights/security and v0.8 OS installation gates before preparing v1.0.0 production authorization; then, playtesting and v1.0.0 release gates. Public redistribution remains blocked until required asset rights are independently verified or resources are replaced.
 
 ## Historical screenshots (original game, not this version)
 

@@ -159,7 +159,8 @@ public final class Gameplay extends JPanel {
                 + " strikes     ORANGE " + model.score(1) + " pts / "
                 + model.canyonStrikes(1) + " strikes     "
                 + ((model.timeRemainingMs() + 999) / 1000) + "s     "
-                + model.state() + "     Audio " + (sound.isEnabled() ? "ON" : "OFF")
+                + model.state() + "     BETA 0.9.0     Audio "
+                + (sound.isEnabled() ? "ON" : "OFF")
                 + (preferences.reducedMotion() ? "     Reduced motion" : "");
         if (!message.equals(status.getText())) status.setText(message);
         canvas.repaint();

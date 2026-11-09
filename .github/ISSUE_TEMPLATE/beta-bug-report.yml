@@ -1,0 +1,59 @@
+name: AirRaid beta bug report
+description: Report a reproducible non-sensitive gameplay, packaging or accessibility defect
+title: "[Beta 0.9.0] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This project is not publicly released. Do not attach credentials, private directory paths, copyrighted files, or personal recordings.
+        Report security vulnerabilities privately as explained in SECURITY.md.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - P0 — crash, data safety or security release blocker
+        - P1 — core game, launch or install unusable
+        - P2 — limited functionality or accessibility defect
+        - P3 — cosmetic or documentation
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Linux, macOS, Windows]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and commit (no personal identifiers)
+      placeholder: "0.9.0 — commit SHA ..."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Include specific controls (Enter/Space/P/R/H/S), match phase and repeatability
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized diagnostic code or evidence reference (optional)
+      description: No credentials, home-directory paths or personal data

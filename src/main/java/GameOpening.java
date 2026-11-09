@@ -35,7 +35,17 @@ public final class GameOpening extends JPanel {
         JLabel heading = new JLabel("AIR RAID", SwingConstants.CENTER);
         heading.setForeground(Color.WHITE);
         heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
-        add(heading, BorderLayout.NORTH);
+        JPanel titles = new JPanel(new BorderLayout());
+        titles.setOpaque(false);
+        titles.add(heading, BorderLayout.CENTER);
+        JLabel betaLabel = new JLabel("BETA 0.9.0 - INTERNAL PLAYTEST BUILD",
+                SwingConstants.CENTER);
+        betaLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        betaLabel.setForeground(new Color(190, 216, 237));
+        betaLabel.getAccessibleContext().setAccessibleName(
+                "Beta version 0.9.0, internal playtest build");
+        titles.add(betaLabel, BorderLayout.SOUTH);
+        add(titles, BorderLayout.NORTH);
 
         animation.setIcon(animatedIcon);
         animation.setHorizontalAlignment(SwingConstants.CENTER);

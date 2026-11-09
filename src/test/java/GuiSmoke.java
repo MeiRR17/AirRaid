@@ -1,4 +1,5 @@
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JComponent;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
@@ -36,6 +37,17 @@ public final class GuiSmoke {
         return null;
     }
 
+    private static boolean hasText(Component root, String part) {
+        if (root instanceof JLabel label && label.getText() != null
+                && label.getText().contains(part)) return true;
+        if (root instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                if (hasText(child, part)) return true;
+            }
+        }
+        return false;
+    }
+
     private static void action(Gameplay game, int keyCode) {
         Object binding = game.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .get(KeyStroke.getKeyStroke(keyCode, 0, false));
@@ -60,7 +72,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v080-ci-" + screen + ".png");
+        File output = new File("target/airraid-v090-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -75,7 +87,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v080-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v090-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -92,6 +104,8 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
+            check(hasText(app.getContentPane(), "BETA 0.9.0"),
+                    "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
                     && button(app.getContentPane(), "Settings") != null
@@ -137,6 +151,8 @@ public final class GuiSmoke {
                     "Arena must remain square on resized window");
             app.setSize(960, 800);
             app.validate();
+            check(hasText(app.getContentPane(), "BETA 0.9.0"),
+                    "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
             check(button(app.getContentPane(), "Sound: Off") != null
                     && !game.soundEnabled() && game.canvas().isReducedMotion()
