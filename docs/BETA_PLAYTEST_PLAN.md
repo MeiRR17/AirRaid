@@ -24,8 +24,9 @@ The sessions must be observed on actual systems, with each session’s result an
 4. Pause via P and by switching to Settings and Rules. Verify no time progression while paused; resume explicitly. Resize the window and verify targets remain aligned.
 5. Exercise sound off, volume, reduced motion and persisted settings. Check no crash on machines without an audio device.
 6. Finish the round either through strikes or the 60-second timer. Confirm correct winner/tie and zero further score changes after completion. Replay and return to menu.
-7. Uninstall and document retained user preferences, leftover installer files, and any OS-specific dialogs. Report P0/P1/P2 defects with reproduction steps and corresponding issues.
-8. Record real evidence in `docs/beta-evidence/sessions.json` (schema below) **only after** the session is performed. Evidence references should resolve to non-sensitive issues or internal artifacts.
+7. After the Results view appears, use **Copy QA report** and paste the sanitized result into the beta issue if relevant. Do not confuse this machine-generated result summary with signed, observed human-playtest evidence. Confirm that copying cannot replay, pause, or change the final score.
+8. Uninstall and document retained user preferences, leftover installer files, and any OS-specific dialogs. Report P0/P1/P2 defects with reproduction steps and corresponding issues.
+9. Record real evidence in `docs/beta-evidence/sessions.json` (schema below) **only after** the session is performed. Evidence references should resolve to non-sensitive issues or internal artifacts.
 
 ## Machine-readable evidence schema
 

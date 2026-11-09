@@ -2,6 +2,12 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.1 — Internal QA reporting patch
+- Add a user-triggered offline round summary on the Results screen; Clipboard failures cannot abort a match.
+- Centralize beta version display and provide a headless `--version` option for support and reproducible reports.
+- Test privacy-minimal report creation, explicit consent, copy failure, and replay stability; capture real results-screen screenshots.
+- No public beta release or change to outstanding human, licensing or platform approval gates.
+
 ## 0.9.0 — Internal beta stabilization
 - Fix real-time match pacing under coalesced or delayed Swing timer events using a monotonic elapsed clock.
 - Add deterministic ten-full-match/replay and dual-player input stress tests.

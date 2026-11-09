@@ -55,8 +55,8 @@ class GameCanvasTest {
         GameModel model = new GameModel();
         model.startNewGame();
         model.tick(GameModel.MATCH_DURATION_MS);
-        ResultsScreen results = new ResultsScreen(() -> {}, () -> {});
-        results.showResult(model);
+        ResultsScreen results = new ResultsScreen(() -> {}, () -> {}, report -> true);
+        results.showResult(model, UserPreferences.defaults());
         assertEquals("It's a tie!", results.outcomeText());
     }
 }
