@@ -42,7 +42,7 @@ public final class Gameplay extends JPanel {
     private boolean showingResults;
 
     public Gameplay(Runnable onMenu, Runnable onRules, Runnable onSettings,
-                    UserPreferences initialPreferences,
+                    Runnable onChecklist, UserPreferences initialPreferences,
                     Consumer<UserPreferences> onPreferenceChange) {
         this.onMenu = onMenu;
         this.onPreferenceChange = onPreferenceChange;
@@ -55,6 +55,9 @@ public final class Gameplay extends JPanel {
         JButton restartButton = new JButton("Restart");
         JButton rulesButton = new JButton("Rules");
         JButton settingsButton = new JButton("Settings");
+        JButton qaButton = new JButton("QA checklist");
+        qaButton.setToolTipText("Pause and open the manual beta test checklist (Q)");
+        qaButton.addActionListener(event -> onChecklist.run());
         settingsButton.setToolTipText("Open local accessibility and audio settings (S)");
         settingsButton.getAccessibleContext().setAccessibleDescription(
                 "Open settings; active match pauses until explicitly resumed");
@@ -73,7 +76,7 @@ public final class Gameplay extends JPanel {
         // instead of the two players' fire commands.
         for (JButton button : new JButton[] {
                 menuButton, pauseButton, restartButton, rulesButton,
-                settingsButton, soundButton
+                settingsButton, qaButton, soundButton
         }) {
             button.setFocusable(false);
             button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
@@ -85,6 +88,7 @@ public final class Gameplay extends JPanel {
         toolbar.add(restartButton);
         toolbar.add(rulesButton);
         toolbar.add(settingsButton);
+        toolbar.add(qaButton);
         toolbar.add(soundButton);
         add(toolbar, BorderLayout.NORTH);
 
@@ -102,7 +106,7 @@ public final class Gameplay extends JPanel {
         add(status, BorderLayout.SOUTH);
 
         controller = new GameController(model, this::refresh, this::onRoundFinished);
-        installBindings(onRules, onSettings);
+        installBindings(onRules, onSettings, onChecklist);
         applyPreferences(initialPreferences);
     }
 
@@ -114,7 +118,7 @@ public final class Gameplay extends JPanel {
         });
     }
 
-    private void installBindings(Runnable onRules, Runnable onSettings) {
+    private void installBindings(Runnable onRules, Runnable onSettings, Runnable onChecklist) {
         bind(KeyEvent.VK_ENTER, false, "blue-down", () -> {
             if (model.state() == GameState.RESULTS) restartGame();
             else model.pressFire(0);
@@ -126,6 +130,7 @@ public final class Gameplay extends JPanel {
         bind(KeyEvent.VK_R, false, "restart", this::restartGame);
         bind(KeyEvent.VK_H, false, "rules", onRules);
         bind(KeyEvent.VK_S, false, "settings", onSettings);
+        bind(KeyEvent.VK_Q, false, "qa-checklist", onChecklist);
         bind(KeyEvent.VK_ESCAPE, false, "menu", onMenu);
         bind(KeyEvent.VK_M, false, "sound", this::toggleSound);
     }

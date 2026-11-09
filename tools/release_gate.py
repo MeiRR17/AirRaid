@@ -42,10 +42,14 @@ def inspect(root: Path, jar: Path | None = None) -> dict:
         else:
             rows = list(reader)
 
+    resource_dir = root / "src/main/resources/Resource"
+    actual_files = [p for p in resource_dir.rglob("*") if p.is_file() or p.is_symlink()]
     actual_paths = {
         p.relative_to(root / "src/main/resources").as_posix()
-        for p in (root / "src/main/resources/Resource").rglob("*") if p.is_file()
+        for p in actual_files
     }
+    if any(p.is_symlink() for p in actual_files):
+        errors.append("symlinked source assets are not permitted")
     listed = []
     verified_source = []
     verified_zip = []
@@ -54,6 +58,14 @@ def inspect(root: Path, jar: Path | None = None) -> dict:
     except (OSError, zipfile.BadZipFile):
         archive = None
         errors.append("packaged JAR cannot be inspected")
+    if archive is not None:
+        names = archive.namelist()
+        packaged_assets = [name for name in names
+                           if name.startswith("Resource/") and not name.endswith("/")]
+        if len(packaged_assets) != len(set(packaged_assets)):
+            errors.append("duplicate resource entries in JAR")
+        if set(packaged_assets) != actual_paths:
+            errors.append("JAR resource inventory differs from source")
 
     for row in rows:
         rel = row["resource_path"]
@@ -81,6 +93,8 @@ def inspect(root: Path, jar: Path | None = None) -> dict:
                     verified_zip.append(rel)
             except KeyError:
                 errors.append("JAR resource missing: " + rel)
+            except (OSError, RuntimeError, zipfile.BadZipFile):
+                errors.append("JAR resource unreadable: " + rel)
         status = row["status"]
         evidence = row["evidence_ref"]
         if status != "APPROVED" or not evidence or evidence == "-":
@@ -98,9 +112,17 @@ def inspect(root: Path, jar: Path | None = None) -> dict:
         blockers.append("source code LICENSE is not owner-approved/published")
     if not (root / "docs" / "RELEASE_APPROVAL.md").is_file():
         blockers.append("human release approval not recorded")
-    source_ok = not errors and len(verified_source) == len(actual_paths)
-    package_ok = jar is None or (archive is not None and len(verified_zip) == len(actual_paths)
-                                 and not any("JAR " in e for e in errors))
+    # A JAR-only packaging defect must not incorrectly invalidate an
+    # otherwise byte-perfect source tree. Keep independent truth values.
+    source_errors = [error for error in errors
+                     if not error.startswith("JAR ")
+                     and error != "duplicate resource entries in JAR"
+                     and error != "packaged JAR cannot be inspected"]
+    source_ok = not source_errors and len(verified_source) == len(actual_paths)
+    package_ok = jar is None or (
+        archive is not None and len(verified_zip) == len(actual_paths)
+        and not any("JAR" in error for error in errors)
+        and not any("duplicate resource" in error for error in errors))
     return {
         "schema_version": 1,
         "asset_count": len(actual_paths),

@@ -21,7 +21,7 @@ class BetaRoundReportTest {
         UserPreferences p = new UserPreferences(false, 25, true);
         String text = BetaRoundReport.format(model, p);
         assertEquals(text, BetaRoundReport.format(model, p));
-        assertTrue(text.contains("AirRaid 0.9.1 / INTERNAL BETA"));
+        assertTrue(text.contains("AirRaid " + AppVersion.NUMBER + " / INTERNAL BETA"));
         assertTrue(text.contains("End reason: TIME_EXPIRED"));
         assertTrue(text.contains("Winner: DRAW"));
         assertTrue(text.contains("Blue strikes: 0"));

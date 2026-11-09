@@ -27,7 +27,7 @@ public final class GameOpening extends JPanel {
     private ImageIcon stillIcon;
 
     public GameOpening(Runnable onStart, Runnable onRules,
-                       Runnable onSettings, Runnable onExit) {
+                       Runnable onSettings, Runnable onChecklist, Runnable onExit) {
         setLayout(new BorderLayout(12, 12));
         setBackground(new Color(12, 26, 43));
         setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
@@ -43,7 +43,7 @@ public final class GameOpening extends JPanel {
         betaLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
         betaLabel.setForeground(new Color(190, 216, 237));
         betaLabel.getAccessibleContext().setAccessibleName(
-                "Beta version 0.9.0, internal playtest build");
+                "Beta version " + AppVersion.NUMBER + ", internal playtest build");
         titles.add(betaLabel, BorderLayout.SOUTH);
         add(titles, BorderLayout.NORTH);
 
@@ -79,17 +79,22 @@ public final class GameOpening extends JPanel {
         rules.addActionListener(event -> onRules.run());
         JButton settings = new JButton("Settings");
         settings.addActionListener(event -> onSettings.run());
+        JButton checklist = new JButton("QA checklist");
+        checklist.setToolTipText("Manually track offline beta test steps (Q)");
+        checklist.addActionListener(event -> onChecklist.run());
         JButton exit = new JButton("Exit");
         exit.addActionListener(event -> onExit.run());
         actions.add(startButton);
         actions.add(rules);
         actions.add(settings);
+        actions.add(checklist);
         actions.add(exit);
         add(actions, BorderLayout.SOUTH);
 
         bind(KeyEvent.VK_ENTER, "start", onStart);
         bind(KeyEvent.VK_H, "rules", onRules);
         bind(KeyEvent.VK_S, "settings", onSettings);
+        bind(KeyEvent.VK_Q, "qa-checklist", onChecklist);
         getAccessibleContext().setAccessibleName("AirRaid main menu");
     }
 
