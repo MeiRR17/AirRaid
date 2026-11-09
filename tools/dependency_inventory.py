@@ -18,7 +18,7 @@ def inventory(pom: Path):
     def resolve(text):
         value = (text or "").strip()
         for _ in range(5):
-            if not value.startswith(") or not value.endswith("):
+            if not (value.startswith(chr(36) + "{") and value.endswith("}")):
                 break
             value = props.get(value[2:-1], "")
         return value
@@ -29,7 +29,8 @@ def inventory(pom: Path):
             data = {key: (element.findtext("m:" + key, default="", namespaces=NS) or "").strip()
                     for key in ("groupId", "artifactId", "version", "scope")}
             data["version"] = resolve(data["version"])
-            if (not data["version"] or "SNAPSHOT" in data["version"].upper()
+            if (not data["version"] or data["version"].startswith(chr(36) + "{")
+                    or "SNAPSHOT" in data["version"].upper()
                     or data["version"].upper() in ("LATEST", "RELEASE")):
                 raise ValueError("Maven " + parent + " version must be pinned: " + data["artifactId"])
             entries.append(data)
