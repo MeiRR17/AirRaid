@@ -171,6 +171,8 @@ public final class GuiSmoke {
                     && game.hudCell(2).contains("TIME ")
                     && game.hudCell(3).contains("STATE RUNNING"),
                     "Compact viewport must retain readable score, time and state");
+            check(game.hudTextFits(),
+                    "All six HUD cells must fit completely in compact viewport");
             captureScreenshot(app, "compact-hud");
             app.setSize(960, 800);
             app.validate();
