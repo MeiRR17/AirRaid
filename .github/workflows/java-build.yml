@@ -32,3 +32,10 @@ jobs:
           test -f target/airraid-0.1.0.jar
           jar tf target/airraid-0.1.0.jar | grep -F 'Resource/General/background.png'
           jar tf target/airraid-0.1.0.jar | grep -F 'Main.class'
+      - name: GUI launch smoke under virtual display
+        run: |
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y xvfb
+          fi
+          xvfb-run -a timeout 20s java -cp target/classes:target/test-classes GuiSmoke
