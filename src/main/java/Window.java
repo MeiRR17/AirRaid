@@ -3,12 +3,12 @@ import java.awt.*;
 
 public class Window extends JFrame {
     private static final int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 800;
-    ImageIcon icon = new ImageIcon("Resource/Window/gameIcon.jpg");
+    Image icon = Assets.image("/Resource/Window/gameIcon.jpg");
     private final Image background;
 
     public Window(Image background){
         this.background = background;
-        setIconImage(icon.getImage());
+        setIconImage(icon);
         this.setTitle("Air Raid");
         this.setSize(WINDOW_WIDTH, WINDOW_HEIGHT); /*Set the size of the JFrame*/
         this.setLocationRelativeTo(null); /*Make the Window pop-up in the middle of the screen (width, height)*/

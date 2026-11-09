@@ -2,8 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 
@@ -30,7 +28,8 @@ public class Gameplay extends JPanel implements KeyListener
     private static final int GAME_DURATION_MS = 60000;  // 60 seconds
     private Timer gameTimer;
     private int timeLeft;
-    private final Image background = new ImageIcon("Resource/General/Background.png").getImage();
+    private static final Font PIXEL_FONT = Assets.font("/Resource/Font/Pixel.ttf", 30f);
+    private final Image background = Assets.image("/Resource/General/background.png");
     private boolean running = true;
 
 
@@ -45,16 +44,8 @@ public class Gameplay extends JPanel implements KeyListener
         blueLabel = new JLabel("0");
         orangeLabel = new JLabel("0");
 
-        try
-        {
-            Font customFontSized = Font.createFont(Font.TRUETYPE_FONT,new File("Resource/Font/Pixel.ttf")).deriveFont(30f);
-            blueLabel.setFont(customFontSized);
-            orangeLabel.setFont(customFontSized);
-        }
-        catch (FontFormatException | IOException e)
-        {
-            e.printStackTrace();
-        }
+        blueLabel.setFont(PIXEL_FONT);
+        orangeLabel.setFont(PIXEL_FONT);
 
         timeLeft = GAME_DURATION_MS;
 
@@ -69,13 +60,13 @@ public class Gameplay extends JPanel implements KeyListener
         this.add(blueLabel);
 
         Image[] planeImages = {
-                new ImageIcon(styleOption("BLUE", new Random().nextInt(5) + 1)).getImage(),
-                new ImageIcon(styleOption("ORANGE", new Random().nextInt(5) + 1)).getImage()
+                Assets.image(styleOption("BLUE", new Random().nextInt(5) + 1)),
+                Assets.image(styleOption("ORANGE", new Random().nextInt(5) + 1))
         };
 
         Image[] bombImages = {
-                new ImageIcon("Resource/Bomb/Blue.png").getImage(),
-                new ImageIcon("Resource/Bomb/Orange.png").getImage()
+                Assets.image("/Resource/Bomb/Blue.png"),
+                Assets.image("/Resource/Bomb/Orange.png")
         };
 
         planes = new Player[]{
@@ -191,11 +182,7 @@ public class Gameplay extends JPanel implements KeyListener
                 this.targets[i][j].draw(graphics);
             }
         }
-        try {
-            graphics.setFont(Font.createFont(Font.TRUETYPE_FONT,new File("Resource/Font/Pixel.ttf")).deriveFont(30f));
-        } catch (FontFormatException | IOException e) {
-            throw new RuntimeException(e);
-        }
+        graphics.setFont(PIXEL_FONT);
         graphics.setColor(Color.WHITE);
         graphics.drawString(Integer.toString(timeLeft / 1000), WIDTH / 2 - 10, WIDTH / 20);
     }
@@ -217,7 +204,7 @@ public class Gameplay extends JPanel implements KeyListener
                 20,
                 20,
                 1,
-                new ImageIcon("Resource/Target/1.png").getImage()
+                Assets.image("/Resource/Target/1.png")
         );
 
         int numberType = 1;
@@ -233,7 +220,7 @@ public class Gameplay extends JPanel implements KeyListener
                         20,
                         20,
                         numberType,
-                        new ImageIcon("Resource/Target/"+ numberType +".png").getImage()
+                        Assets.image("/Resource/Target/" + numberType + ".png")
                 );
                 this.targets[i][j] = target;
                 this.targets[i][j].start();
@@ -321,7 +308,7 @@ public class Gameplay extends JPanel implements KeyListener
             this.targets[i][j].setWIDTH(0);
             this.targets[i][j].setHEIGHT(0);
             this.targets[i][j].setNumber(0);
-            this.targets[i][j].setImage(new ImageIcon("Resource/Target/1.png").getImage());
+            this.targets[i][j].setImage(Assets.image("/Resource/Target/1.png"));
 
             if (bombIndex == 0) {
                 blueChecker++;
@@ -340,7 +327,7 @@ public class Gameplay extends JPanel implements KeyListener
     }
 
     private String styleOption(String color, int type){
-        return "Resource/Player/"+ color +"_TEAM/option"+ type +".png";
+        return "/Resource/Player/" + color + "_TEAM/option" + type + ".png";
     }
 
     @Override

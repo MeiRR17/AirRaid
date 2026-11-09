@@ -18,7 +18,7 @@ public class GameOpening {
         backgroundLabel.setBounds(0, 0, titlePanel.getWidth(), titlePanel.getHeight());
 
         // Load the GIF file and create an ImageIcon
-        ImageIcon gifIcon = new ImageIcon("path/to/your/gif/file.gif");
+        ImageIcon gifIcon = new ImageIcon(Assets.url("/Resource/General/FLY_.gif"));
 
         // Set the ImageIcon as the icon for the JLabel
         backgroundLabel.setIcon(gifIcon);
