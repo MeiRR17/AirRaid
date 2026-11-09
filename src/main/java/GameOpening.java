@@ -1,3 +1,4 @@
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -15,12 +16,18 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 
-/** The integrated home card: Start, Rules and Exit are immediately visible. */
+/** Home menu: Start, Rules, Settings, Exit. Reduced motion uses a static GIF frame. */
 public final class GameOpening extends JPanel {
     private final JButton startButton = new JButton("Start");
+    private final JLabel animation = new JLabel();
+    private final ImageIcon animatedIcon =
+            new ImageIcon(Assets.url("/Resource/General/FLY_.gif"));
+    private ImageIcon stillIcon;
 
-    public GameOpening(Runnable onStart, Runnable onRules, Runnable onExit) {
+    public GameOpening(Runnable onStart, Runnable onRules,
+                       Runnable onSettings, Runnable onExit) {
         setLayout(new BorderLayout(12, 12));
         setBackground(new Color(12, 26, 43));
         setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
@@ -30,8 +37,9 @@ public final class GameOpening extends JPanel {
         heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
         add(heading, BorderLayout.NORTH);
 
-        JLabel animation = new JLabel(new ImageIcon(Assets.url("/Resource/General/FLY_.gif")));
+        animation.setIcon(animatedIcon);
         animation.setHorizontalAlignment(SwingConstants.CENTER);
+        animation.setForeground(Color.WHITE);
         JScrollPane scroller = new JScrollPane(animation);
         scroller.setBorder(null);
         scroller.setPreferredSize(new Dimension(650, 320));
@@ -55,29 +63,53 @@ public final class GameOpening extends JPanel {
         actions.setOpaque(false);
         startButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
         startButton.addActionListener(event -> onStart.run());
-        startButton.getAccessibleContext().setAccessibleDescription("Begin a new two-player match");
+        startButton.getAccessibleContext().setAccessibleDescription(
+                "Begin a new two-player match");
         JButton rules = new JButton("Rules");
         rules.addActionListener(event -> onRules.run());
+        JButton settings = new JButton("Settings");
+        settings.addActionListener(event -> onSettings.run());
         JButton exit = new JButton("Exit");
         exit.addActionListener(event -> onExit.run());
         actions.add(startButton);
         actions.add(rules);
+        actions.add(settings);
         actions.add(exit);
         add(actions, BorderLayout.SOUTH);
 
-        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "start");
-        getActionMap().put("start", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent event) { onStart.run(); }
-        });
-        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_H, 0), "rules");
-        getActionMap().put("rules", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent event) { onRules.run(); }
-        });
+        bind(KeyEvent.VK_ENTER, "start", onStart);
+        bind(KeyEvent.VK_H, "rules", onRules);
+        bind(KeyEvent.VK_S, "settings", onSettings);
         getAccessibleContext().setAccessibleName("AirRaid main menu");
     }
 
+    private void bind(int key, String name, Runnable action) {
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(key, 0), name);
+        getActionMap().put(name, new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent event) { action.run(); }
+        });
+    }
+
+    public void setReducedMotion(boolean reduced) {
+        if (reduced) {
+            if (stillIcon == null) {
+                try {
+                    var firstFrame = ImageIO.read(Assets.url("/Resource/General/FLY_.gif"));
+                    if (firstFrame != null) stillIcon = new ImageIcon(firstFrame);
+                } catch (IOException ignored) {
+                    // If a GIF decoder is unavailable, show static text instead.
+                }
+            }
+            animation.setIcon(stillIcon);
+            animation.setText(stillIcon == null ? "Reduced motion enabled" : "");
+        } else {
+            animation.setIcon(animatedIcon);
+            animation.setText("");
+        }
+    }
+
+    public boolean reducedMotionShown() { return animation.getIcon() != animatedIcon; }
     public JButton startButton() { return startButton; }
     public void focusStartButton() { startButton.requestFocusInWindow(); }
 }

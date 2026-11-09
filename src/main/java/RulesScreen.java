@@ -47,8 +47,10 @@ public final class RulesScreen extends JPanel {
                 "Equal scores after 60 seconds are a tie.",
                 "GAME CONTROLS",
                 "P: Pause / resume. R: Restart the current match.",
-                "H: View these rules (the match will pause). ESC: Return to menu.",
-                "Returning from the rules keeps the match paused until you resume."
+                "H: Rules (pauses the match). S: Settings (also pauses).",
+                "M: Sound on/off. Sound begins off by default. Volume and motion can be changed in Settings.",
+                "ESC: Return to main menu during play; Back returns from Rules or Settings.",
+                "Returning from Rules or Settings keeps the match paused until you press P."
         };
         for (int i = 0; i < paragraphs.length; i++) {
             boolean headingText = paragraphs[i].equals(paragraphs[i].toUpperCase())
