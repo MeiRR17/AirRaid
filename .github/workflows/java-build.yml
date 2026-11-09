@@ -1,0 +1,41 @@
+name: Java build
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'pom.xml'
+      - 'src/**'
+      - '.github/workflows/java-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Maven verify (JDK 21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile and test
+        run: mvn -B -ntp --no-transfer-progress clean verify
+      - name: Check packaged JAR
+        run: |
+          test -f target/airraid-0.1.0.jar
+          jar tf target/airraid-0.1.0.jar | grep -F 'Resource/General/background.png'
+          jar tf target/airraid-0.1.0.jar | grep -F 'Main.class'
+      - name: GUI launch smoke under virtual display
+        run: |
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y xvfb
+          fi
+          xvfb-run -a timeout 20s java -cp target/classes:target/test-classes GuiSmoke
