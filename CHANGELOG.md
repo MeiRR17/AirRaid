@@ -2,6 +2,12 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.3 — Responsive scoreboard and results safety
+- Replace long single-line match status with a six-cell, high-contrast 2×3 scoreboard for points, strikes, clock, game state, audio and beta build.
+- Prevent repeated Enter (blue fire) from accidentally replaying a finished round; keep explicit Play again and R.
+- Add accessible HUD tests, key-repeat regression and a true 620×480 game screenshot under CI.
+- No public beta or production release; legal, human and cross-platform acceptance remains open.
+
 ## 0.9.2 — Guided internal beta QA and package integrity
 - Add accessible, local-only eight-step QA checklist to menu and game toolbar with Q shortcut, explicit copy and reset; preserve active match in paused state.
 - Never classify checked boxes as externally verified human playtest sessions.
