@@ -129,7 +129,7 @@ Two people share one keyboard. The blue airplane is controlled with Enter; orang
 
 `0.1 build → 0.2 safe engine → 0.3 correct rules → 0.4 game flow → 0.5 assets → 0.6 usability → 0.7 testing & license → 0.8 packaging → 0.9 beta → 1.0 release`.
 
-**Estimated cumulative effort:** 66–120 focused engineering hours, not an elapsed-time or delivery-date guarantee; complexity and asset rights may expand it. Work is not complete simply because documentation exists. The tasks/acceptance criteria above are the authoritative scope. Keep a parent tracking GitHub issue with per-version checkboxes. For each version, attach commit/PR/release evidence, test commands and blockers before checking it off.
+**Estimated cumulative effort:** 66–110 focused engineering hours from the per-version ranges above, plus approximately 10 hours of contingency (planning envelope: 66–120 hours). These are not elapsed-time or delivery-date guarantees; complexity and asset rights may expand them. Work is not complete simply because documentation exists. The tasks/acceptance criteria above are the authoritative scope. Keep a parent tracking GitHub issue with per-version checkboxes. For each version, attach commit/PR/release evidence, test commands and blockers before checking it off.
 
 ## First implementation PR after this planning PR
 
