@@ -72,6 +72,25 @@ class MatchClockTest {
         });
     }
 
+    @Test void alreadyFinishedModelStillPublishesResultsExactlyOnce() throws Exception {
+        AtomicLong now = new AtomicLong(100_000_000L);
+        AtomicInteger called = new AtomicInteger();
+        SwingUtilities.invokeAndWait(() -> {
+            GameModel model = new GameModel();
+            GameController controller = new GameController(
+                    model, () -> {}, called::incrementAndGet, now::get);
+            controller.startNewGame();
+            model.tick(GameRules.MATCH_DURATION_MS);
+            assertEquals(GameState.RESULTS, model.state());
+            controller.poll();
+            assertEquals(1, called.get());
+            assertFalse(controller.timerRunning());
+            controller.poll();
+            assertEquals(1, called.get());
+            controller.dispose();
+        });
+    }
+
     @Test void controllerMustBeUsedOnlyOnSwingEdt() {
         GameController controller = new GameController(
                 new GameModel(), () -> {}, () -> {}, System::nanoTime);
