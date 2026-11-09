@@ -1,0 +1,31 @@
+# AirRaid change history
+
+This changelog tracks development milestones. None of these entries is an approved production release.
+
+## 0.8.0 — Desktop packaging foundation
+- Add host-native jpackage app-image creation for Windows/macOS/Linux using a bundled Java 21 runtime.
+- Add a packaged-launcher headless self-test, archive/media consistency checks and SHA-256 package evidence.
+- Add opt-in cross-platform QA workflow and optional unsigned host-native installer generation (not publicly uploaded).
+- Preserve release blockers for unlicensed visual assets, code-license approval, vulnerability review, signing and real install/uninstall tests.
+
+## 0.7.0 — Quality/security gates
+- Add seeded simulation invariants, safe startup diagnostics and symlink-safe local preferences.
+- Add provenance manifest, release-integrity gate, direct dependency inventory, pinned CI actions and security/contribution policy.
+
+## 0.6.0 — Settings and accessibility
+- Persist safe local preferences for audio volume, sound and reduced motion; add keyboard-accessible Settings screen.
+
+## 0.5.0 — Rendering and sound
+- Cache visual resources, show gameplay feedback and synthesize optional audio. Record 23 asset-rights blockers.
+
+## 0.4.0 — Game flow
+- Resizeable arena, integrated menu/rules/results screens, keyboard navigation and replay.
+
+## 0.3.0 — Rules
+- Four-canyon-strike loss, deterministic collision outcomes and scoring rules.
+
+## 0.2.0 — Game engine
+- Replace independent game entity threads with one EDT-controlled simulation and safe lifecycle.
+
+## 0.1.0 — Build foundation
+- Standard Maven Java 21 project structure, classpath media, resource and GUI smoke tests.
