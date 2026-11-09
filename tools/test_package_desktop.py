@@ -22,7 +22,7 @@ class PackageDesktopTest(unittest.TestCase):
         base = Path("/images")
         self.assertEqual(base / "AirRaid/bin/AirRaid",
                          image_paths(base, "Linux")[1])
-        self.assertEqual(base / "AirRaid.exe",
+        self.assertEqual(base / "AirRaid/AirRaid.exe",
                          image_paths(base, "Windows")[1])
         self.assertEqual(base / "AirRaid.app/Contents/MacOS/AirRaid",
                          image_paths(base, "Darwin")[1])
