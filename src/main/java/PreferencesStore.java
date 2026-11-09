@@ -3,6 +3,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
@@ -31,10 +32,13 @@ public final class PreferencesStore {
 
     public LoadResult load() {
         try {
-            if (!Files.exists(path)) {
+            if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
                 return new LoadResult(UserPreferences.defaults(), null);
             }
-            if (!Files.isRegularFile(path) || Files.size(path) > MAX_BYTES) {
+            // Never read from symlinks, devices or pipes in the preferences slot.
+            if (Files.isSymbolicLink(path)
+                    || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
+                    || Files.size(path) > MAX_BYTES) {
                 return recovered();
             }
             Properties properties = new Properties();
@@ -80,6 +84,13 @@ public final class PreferencesStore {
                 return "Settings could not be saved; changes apply until the game exits.";
             }
             Files.createDirectories(parent);
+            // Do not replace a link or a special file at the expected path:
+            // this should only ever be a small local regular settings file.
+            if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)
+                    && (Files.isSymbolicLink(path)
+                        || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))) {
+                return "Settings location is not a regular file; no changes were written.";
+            }
             temp = Files.createTempFile(parent, "preferences-", ".tmp");
             Properties properties = new Properties();
             properties.setProperty("version", Integer.toString(UserPreferences.SCHEMA_VERSION));

@@ -5,6 +5,12 @@ public final class Main {
     private Main() {}
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Window().showWindow());
+        SwingUtilities.invokeLater(() -> {
+            try {
+                new Window().showWindow();
+            } catch (RuntimeException exception) {
+                AppDiagnostics.reportStartup();
+            }
+        });
     }
 }

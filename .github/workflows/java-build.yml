@@ -18,9 +18,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
           distribution: temurin
           java-version: '21'
@@ -29,9 +29,14 @@ jobs:
         run: mvn -B -ntp --no-transfer-progress clean verify
       - name: Check packaged JAR
         run: |
-          test -f target/airraid-0.6.0.jar
-          jar tf target/airraid-0.6.0.jar | grep -F 'Resource/General/background.png'
-          jar tf target/airraid-0.6.0.jar | grep -F 'Main.class'
+          test -f target/airraid-0.7.0.jar
+          jar tf target/airraid-0.7.0.jar | grep -F 'Resource/General/background.png'
+          jar tf target/airraid-0.7.0.jar | grep -F 'Main.class'
+      - name: Asset provenance and dependency inventory (development mode)
+        run: |
+          python3 -m unittest discover -s tools -p 'test_*.py' -v
+          python3 tools/dependency_inventory.py --pom pom.xml --output target/dependency-inventory.json
+          python3 tools/release_gate.py --mode development --jar target/airraid-0.7.0.jar --output target/release-readiness.json
       - name: GUI launch smoke under virtual display
         run: |
           if ! command -v xvfb-run >/dev/null 2>&1; then
@@ -40,11 +45,13 @@ jobs:
           fi
           xvfb-run -a timeout 20s java -cp target/classes:target/test-classes GuiSmoke
       - name: Publish actual game screenshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: airraid-v060-gui-captures
+          name: airraid-v070-gui-captures
           path: |
-            target/airraid-v060-ci-settings.png
-            target/airraid-v060-ci-gameplay.png
+            target/airraid-v070-ci-settings.png
+            target/airraid-v070-ci-gameplay.png
+            target/release-readiness.json
+            target/dependency-inventory.json
           if-no-files-found: error
           retention-days: 7
