@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.9.3 — responsive scoreboard and safe results navigation.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
+**Current development version: v0.9.4 — stable keyboard shortcuts and clear pause feedback.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
 
 ## Build and play
 
@@ -10,7 +10,7 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.9.3.jar
+java -jar target/airraid-0.9.4.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
@@ -30,7 +30,15 @@ For **internal QA only**, pass `--installer` to also create an **unsigned** host
 
 See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
 
-## Responsive match scoreboard — new in v0.9.3
+## Keyboard-repeat-safe gameplay — new in v0.9.4
+
+**Holding P, R or M now triggers only one action per physical key press.** This prevents OS key repeat from rapidly toggling Pause/Resume, repeatedly erasing the match with Restart, or flipping sound repeatedly. The action becomes available again on key release; shortcut states are safely reset after window focus loss or returning from a modal game screen. Enter and Space remain independent continuous two-player firing controls.
+
+The paused game displays a large, static **MATCH PAUSED** panel explaining that the timer is stopped and that pressing P or clicking Resume continues the round. The pause view respects reduced-motion settings and requires no new animation, threads or network access. CI tests held-key sequences and captures the real pause overlay; Windows/macOS human testing is still outstanding.
+
+See [v0.9.4 engineering evidence](docs/V0_9_4_IMPLEMENTATION.md) and [beta testing plan](docs/BETA_PLAYTEST_PLAN.md).
+
+## Responsive match scoreboard — new in v0.9.4
 
 The previously long, single-line status text is split into six labelled areas in a 2×3 panel: **Blue**, **Orange**, **time remaining**, **match state**, **sound / reduced motion**, and **beta version**. The scoreboard stays visible when resizing the game down to the supported minimum (620×480), and each cell has an accessible name.
 
@@ -52,7 +60,7 @@ See [v0.9.2 implementation](docs/V0_9_2_IMPLEMENTATION.md) and [human playtest p
 
 After a complete round, the results screen offers **Copy QA report**. It copies a text summary containing the beta version, outcome, reason, scores, canyon strikes, time remaining, sound preference and reduced-motion setting. Copying requires an explicit button click, sends nothing over the network and creates no log or file. The report deliberately contains **no names, home paths, timestamps, device IDs or account information**. If the clipboard is unavailable, the results screen displays an explanation without crashing or losing the match.
 
-This local report is useful when submitting a beta bug report. It is **not evidence of a completed human playtest** and does not satisfy the independent three-session acceptance gate. The GUI smoke now captures the **real Results screen** as well as Settings and gameplay. Run `java -jar target/airraid-0.9.3.jar --version` to print the beta version without opening the GUI.
+This local report is useful when submitting a beta bug report. It is **not evidence of a completed human playtest** and does not satisfy the independent three-session acceptance gate. The GUI smoke now captures the **real Results screen** as well as Settings and gameplay. Run `java -jar target/airraid-0.9.4.jar --version` to print the beta version without opening the GUI.
 
 Implementation and tests: [v0.9.1 QA reporting](docs/V0_9_1_IMPLEMENTATION.md).
 
@@ -70,7 +78,7 @@ Development evidence commands:
 ```sh
 mvn -B -ntp clean verify
 python3 -m unittest discover -s tools -p 'test_*.py' -v
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.3.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.4.jar
 python3 tools/beta_gate.py --mode development
 ```
 
@@ -124,7 +132,7 @@ Development commands (after `mvn clean verify`):
 ```sh
 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/dependency_inventory.py --pom pom.xml
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.3.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.4.jar
 ```
 
 The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.

@@ -139,6 +139,14 @@ public final class GameCanvas extends JPanel {
         }
     }
 
+    private static void drawCentered(Graphics2D g, String message, Font font,
+                                     Color color, int baseline) {
+        g.setFont(font);
+        g.setColor(color);
+        int width = g.getFontMetrics().stringWidth(message);
+        g.drawString(message, (GameRules.WIDTH - width) / 2, baseline);
+    }
+
     @Override protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
         Graphics2D g = (Graphics2D) graphics.create();
@@ -189,13 +197,19 @@ public final class GameCanvas extends JPanel {
             g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 338, 130);
 
             if (model.state() == GameState.PAUSED) {
-                g.setColor(new Color(0, 0, 0, 180));
-                g.fillRect(80, 290, 640, 140);
-                g.setColor(Color.WHITE);
-                String message = "Paused - press P to resume";
-                g.setFont(hudLarge);
-                int advance = g.getFontMetrics().stringWidth(message);
-                g.drawString(message, (GameRules.WIDTH - advance) / 2, 370);
+                // Fixed-size overlay in logical arena coordinates: no timer,
+                // flashing, animation or input interception.
+                g.setColor(new Color(7, 18, 33, 218));
+                g.fillRoundRect(104, 269, 592, 216, 24, 24);
+                g.setColor(new Color(111, 205, 255));
+                g.setStroke(new BasicStroke(3f));
+                g.drawRoundRect(104, 269, 592, 216, 24, 24);
+                drawCentered(g, "MATCH PAUSED", hudLarge.deriveFont(37f),
+                        Color.WHITE, 345);
+                drawCentered(g, "Press P or click Resume", hudMedium,
+                        new Color(170, 220, 255), 397);
+                drawCentered(g, "Match clock stops while paused", hudSmall,
+                        new Color(224, 237, 249), 441);
             }
         } finally {
             g.dispose();

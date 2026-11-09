@@ -48,14 +48,24 @@ public final class GuiSmoke {
         return false;
     }
 
-    private static void action(Gameplay game, int keyCode) {
+    private static void key(Gameplay game, int keyCode, boolean released) {
         Object binding = game.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .get(KeyStroke.getKeyStroke(keyCode, 0, false));
+                .get(KeyStroke.getKeyStroke(keyCode, 0, released));
         if (binding == null || game.getActionMap().get(binding) == null) {
-            throw new AssertionError("Missing gameplay key: " + keyCode);
+            throw new AssertionError("Missing gameplay key: " + keyCode
+                    + (released ? " released" : " pressed"));
         }
         game.getActionMap().get(binding).actionPerformed(
-                new ActionEvent(game, ActionEvent.ACTION_PERFORMED, "smoke"));
+                new ActionEvent(game, ActionEvent.ACTION_PERFORMED,
+                        released ? "smoke-release" : "smoke-press"));
+    }
+
+    private static void action(Gameplay game, int keyCode) {
+        key(game, keyCode, false);
+        if (keyCode == KeyEvent.VK_P || keyCode == KeyEvent.VK_R
+                || keyCode == KeyEvent.VK_M) {
+            key(game, keyCode, true);
+        }
     }
 
     private static void check(boolean condition, String message) {
@@ -72,7 +82,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v093-ci-" + screen + ".png");
+        File output = new File("target/airraid-v094-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -87,7 +97,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v093-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v094-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -104,7 +114,7 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
-            check(hasText(app.getContentPane(), "BETA 0.9.3"),
+            check(hasText(app.getContentPane(), "BETA 0.9.4"),
                     "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
@@ -176,9 +186,20 @@ public final class GuiSmoke {
             captureScreenshot(app, "compact-hud");
             app.setSize(960, 800);
             app.validate();
-            check(hasText(app.getContentPane(), "BETA 0.9.3"),
+            check(hasText(app.getContentPane(), "BETA 0.9.4"),
                     "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
+            key(game, KeyEvent.VK_P, false);
+            for (int i = 0; i < 8; i++) key(game, KeyEvent.VK_P, false);
+            check(game.model().state() == GameState.PAUSED && !game.timerRunning(),
+                    "Held P key must pause once rather than rapidly toggle");
+            check("STATE PAUSED".equals(game.hudCell(3)),
+                    "Accessible game state must show paused");
+            captureScreenshot(app, "paused");
+            key(game, KeyEvent.VK_P, true);
+            action(game, KeyEvent.VK_P);
+            check(game.model().state() == GameState.RUNNING && game.timerRunning(),
+                    "Release then press P must resume exactly once");
             check(button(app.getContentPane(), "Sound: Off") != null
                     && !game.soundEnabled() && game.canvas().isReducedMotion()
                     && game.appliedPreferences().volumePercent() == 37,

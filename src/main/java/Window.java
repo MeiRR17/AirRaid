@@ -72,7 +72,10 @@ public final class Window extends JFrame {
         });
         addWindowFocusListener(new WindowAdapter() {
             @Override public void windowLostFocus(WindowEvent event) {
-                if (gameplay != null && GAME.equals(activeCard)) gameplay.pauseGame();
+                if (gameplay != null && GAME.equals(activeCard)) {
+                    gameplay.pauseGame();
+                    gameplay.resetShortcutLatches();
+                }
             }
         });
     }
@@ -117,6 +120,7 @@ public final class Window extends JFrame {
     public void returnFromRules() {
         if (rulesReturnToGame && gameplay != null) {
             showCard(GAME);
+            gameplay.resetShortcutLatches();
             gameplay.focusGame();
         } else {
             showCard(MENU);
@@ -136,6 +140,7 @@ public final class Window extends JFrame {
     public void returnFromSettings() {
         if (settingsReturnToGame && gameplay != null) {
             showCard(GAME);
+            gameplay.resetShortcutLatches();
             gameplay.focusGame();
         } else {
             showCard(MENU);
@@ -168,6 +173,7 @@ public final class Window extends JFrame {
     public void returnFromChecklist() {
         if (checklistReturnToGame && gameplay != null) {
             showCard(GAME);
+            gameplay.resetShortcutLatches();
             gameplay.focusGame();
         } else {
             showCard(MENU);

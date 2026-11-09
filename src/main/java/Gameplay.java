@@ -35,6 +35,7 @@ public final class Gameplay extends JPanel {
     private final JLabel[] hudLabels = new JLabel[6];
     private final JPanel hud = new JPanel(new GridLayout(2, 3, 6, 3));
     private final JButton pauseButton = new JButton("Pause");
+    private final ShortcutLatch shortcutLatch = new ShortcutLatch();
     private final JButton soundButton = new JButton("Sound: Off");
     private final SoundEffects sound = new SoundEffects();
     private final ResultsScreen results;
@@ -129,6 +130,23 @@ public final class Gameplay extends JPanel {
         });
     }
 
+    /**
+     * KEY_PRESSED repeats must not retrigger a toggle or reset.
+     * Fire keys intentionally remain independent and are not latched here.
+     */
+    private void bindOnce(int keyCode, String name, Runnable callback) {
+        bind(keyCode, false, name, () -> {
+            if (shortcutLatch.press(keyCode)) callback.run();
+        });
+        bind(keyCode, true, name + "-released",
+                () -> shortcutLatch.release(keyCode));
+    }
+
+    /** A key-release can be lost when the window loses focus. */
+    public void resetShortcutLatches() {
+        shortcutLatch.clear();
+    }
+
     private void installBindings(Runnable onRules, Runnable onSettings, Runnable onChecklist) {
         // Enter must never accidentally clear a finished round when the
         // player continues holding their blue-fire key at the results screen.
@@ -137,13 +155,13 @@ public final class Gameplay extends JPanel {
         bind(KeyEvent.VK_ENTER, true, "blue-up", () -> model.releaseFire(0));
         bind(KeyEvent.VK_SPACE, false, "orange-down", () -> model.pressFire(1));
         bind(KeyEvent.VK_SPACE, true, "orange-up", () -> model.releaseFire(1));
-        bind(KeyEvent.VK_P, false, "pause-toggle", this::togglePause);
-        bind(KeyEvent.VK_R, false, "restart", this::restartGame);
+        bindOnce(KeyEvent.VK_P, "pause-toggle", this::togglePause);
+        bindOnce(KeyEvent.VK_R, "restart", this::restartGame);
         bind(KeyEvent.VK_H, false, "rules", onRules);
         bind(KeyEvent.VK_S, false, "settings", onSettings);
         bind(KeyEvent.VK_Q, false, "qa-checklist", onChecklist);
         bind(KeyEvent.VK_ESCAPE, false, "menu", onMenu);
-        bind(KeyEvent.VK_M, false, "sound", this::toggleSound);
+        bindOnce(KeyEvent.VK_M, "sound", this::toggleSound);
     }
 
     public void startGame() { restartGame(); }
