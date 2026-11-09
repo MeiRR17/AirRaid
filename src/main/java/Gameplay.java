@@ -1,178 +1,166 @@
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
-import javax.swing.InputMap;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.Image;
-import java.util.Random;
 
 /**
- * A renderer and keyboard adapter only. All game mutations are performed by the
- * model on Swing's EDT; no custom simulation threads are launched.
+ * Desktop game flow: no absolute-positioned controls, independent keyboard
+ * bindings, a scalable arena and a separate round-results card.
  */
 public final class Gameplay extends JPanel {
-    private final GameModel model = new GameModel();
-    private final GameController controller = new GameController(model, this::repaint, this::repaint);
-    private final Image background = Assets.image("/Resource/General/background.png");
-    private final Image[] planes = new Image[2];
-    private final Image[] bombImages = {
-            Assets.image("/Resource/Bomb/Blue.png"), Assets.image("/Resource/Bomb/Orange.png")
-    };
-    private final Image[] targetImages = new Image[4];
-    private final Font hudFont = Assets.font("/Resource/Font/Pixel.ttf", 26f);
-    private final JButton pause = new JButton("Pause");
+    private static final String ARENA = "arena";
+    private static final String RESULTS = "results";
 
-    public Gameplay(Runnable onMenu) {
+    private final GameModel model = new GameModel();
+    private final GameCanvas canvas = new GameCanvas(model);
+    private final CardLayout centerNavigation = new CardLayout();
+    private final JPanel centerCards = new JPanel(centerNavigation);
+    private final JLabel status = new JLabel();
+    private final JButton pauseButton = new JButton("Pause");
+    private final ResultsScreen results;
+    private final GameController controller;
+    private final Runnable onMenu;
+    private boolean showingResults;
+
+    public Gameplay(Runnable onMenu, Runnable onRules) {
+        this.onMenu = onMenu;
+        setLayout(new BorderLayout(0, 0));
         setBackground(new Color(11, 19, 37));
         setFocusable(true);
-        setLayout(null);
 
-        Random random = new Random();
-        planes[0] = Assets.image("/Resource/Player/BLUE_TEAM/option" + (random.nextInt(5) + 1) + ".png");
-        planes[1] = Assets.image("/Resource/Player/ORANGE_TEAM/option" + (random.nextInt(5) + 1) + ".png");
-        for (int i = 0; i < targetImages.length; i++) {
-            targetImages[i] = Assets.image("/Resource/Target/" + (i + 1) + ".png");
+        JButton menuButton = new JButton("Menu");
+        JButton restartButton = new JButton("Restart");
+        JButton rulesButton = new JButton("Rules");
+        menuButton.addActionListener(event -> onMenu.run());
+        pauseButton.addActionListener(event -> togglePause());
+        restartButton.addActionListener(event -> restartGame());
+        rulesButton.addActionListener(event -> onRules.run());
+
+        // These buttons are reachable by labelled shortcuts; keeping them out of
+        // the tab focus path avoids Swing consuming Space/Enter as button clicks
+        // instead of the two players' fire commands.
+        for (JButton button : new JButton[] {
+                menuButton, pauseButton, restartButton, rulesButton
+        }) {
+            button.setFocusable(false);
+            button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         }
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEADING, 8, 5));
+        toolbar.setBackground(new Color(21, 38, 60));
+        toolbar.add(menuButton);
+        toolbar.add(pauseButton);
+        toolbar.add(restartButton);
+        toolbar.add(rulesButton);
+        add(toolbar, BorderLayout.NORTH);
 
-        JButton menu = new JButton("Menu");
-        JButton restart = new JButton("Restart");
-        menu.setBounds(10, 10, 90, 34);
-        pause.setBounds(108, 10, 100, 34);
-        restart.setBounds(216, 10, 100, 34);
-        menu.addActionListener(event -> onMenu.run());
-        pause.addActionListener(event -> togglePause());
-        restart.addActionListener(event -> {
-            controller.startNewGame();
-            pause.setText("Pause");
-            requestFocusInWindow();
-        });
-        // Focused buttons intercept the fire keys before panel bindings.
-        menu.setFocusable(false);
-        pause.setFocusable(false);
-        restart.setFocusable(false);
-        add(menu);
-        add(pause);
-        add(restart);
+        results = new ResultsScreen(this::restartGame, onMenu);
+        centerCards.add(canvas, ARENA);
+        centerCards.add(results, RESULTS);
+        add(centerCards, BorderLayout.CENTER);
 
-        installBindings();
+        status.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+        status.setForeground(Color.WHITE);
+        status.setBackground(new Color(21, 38, 60));
+        status.setOpaque(true);
+        status.setBorder(BorderFactory.createEmptyBorder(9, 12, 9, 12));
+        status.getAccessibleContext().setAccessibleName("Game state and scores");
+        add(status, BorderLayout.SOUTH);
+
+        controller = new GameController(model, this::refresh, this::onRoundFinished);
+        installBindings(onRules);
+        refresh();
     }
 
     private void bind(int key, boolean released, String name, Runnable callback) {
-        InputMap input = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actions = getActionMap();
-        input.put(KeyStroke.getKeyStroke(key, 0, released), name);
-        actions.put(name, new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent event) {
-                callback.run();
-            }
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(key, 0, released), name);
+        getActionMap().put(name, new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent event) { callback.run(); }
         });
     }
 
-    private void installBindings() {
-        bind(KeyEvent.VK_ENTER, false, "blue-down", () -> model.pressFire(0));
+    private void installBindings(Runnable onRules) {
+        bind(KeyEvent.VK_ENTER, false, "blue-down", () -> {
+            if (model.state() == GameState.RESULTS) restartGame();
+            else model.pressFire(0);
+        });
         bind(KeyEvent.VK_ENTER, true, "blue-up", () -> model.releaseFire(0));
         bind(KeyEvent.VK_SPACE, false, "orange-down", () -> model.pressFire(1));
         bind(KeyEvent.VK_SPACE, true, "orange-up", () -> model.releaseFire(1));
         bind(KeyEvent.VK_P, false, "pause-toggle", this::togglePause);
-        bind(KeyEvent.VK_R, false, "restart", () -> {
-            controller.startNewGame();
-            pause.setText("Pause");
-        });
+        bind(KeyEvent.VK_R, false, "restart", this::restartGame);
+        bind(KeyEvent.VK_H, false, "rules", onRules);
+        bind(KeyEvent.VK_ESCAPE, false, "menu", onMenu);
     }
 
-    public void startGame() {
+    public void startGame() { restartGame(); }
+
+    public void restartGame() {
         controller.startNewGame();
+        showingResults = false;
+        centerNavigation.show(centerCards, ARENA);
+        pauseButton.setText("Pause");
+        refresh();
+        focusGame();
+    }
+
+    private void refresh() {
+        String message = "BLUE " + model.score(0) + " pts / " + model.canyonStrikes(0)
+                + " strikes     ORANGE " + model.score(1) + " pts / "
+                + model.canyonStrikes(1) + " strikes     "
+                + ((model.timeRemainingMs() + 999) / 1000) + "s     "
+                + model.state();
+        if (!message.equals(status.getText())) status.setText(message);
+        canvas.repaint();
+    }
+
+    private void onRoundFinished() {
+        results.showResult(model);
+        centerNavigation.show(centerCards, RESULTS);
+        showingResults = true;
+        pauseButton.setText("Pause");
+        refresh();
+        results.focusReplay();
     }
 
     public void pauseGame() {
         controller.pause();
-        if (model.state() == GameState.PAUSED) {
-            pause.setText("Resume");
-        }
+        if (model.state() == GameState.PAUSED) pauseButton.setText("Resume");
     }
 
     public void resumeGame() {
         controller.resume();
         if (model.state() == GameState.RUNNING) {
-            pause.setText("Pause");
-            requestFocusInWindow();
+            pauseButton.setText("Pause");
+            focusGame();
         }
     }
 
     public void togglePause() {
-        if (model.state() == GameState.RUNNING) {
-            pauseGame();
-        } else if (model.state() == GameState.PAUSED) {
-            resumeGame();
-        }
+        if (model.state() == GameState.RUNNING) pauseGame();
+        else if (model.state() == GameState.PAUSED) resumeGame();
+    }
+
+    public void focusGame() {
+        if (showingResults) results.focusReplay();
+        else requestFocusInWindow();
     }
 
     public void disposeGame() { controller.dispose(); }
     public GameModel model() { return model; }
     public boolean timerRunning() { return controller.timerRunning(); }
-
-    @Override protected void paintComponent(Graphics graphics) {
-        super.paintComponent(graphics);
-        Graphics2D g = (Graphics2D) graphics.create();
-        try {
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
-            for (Target target : model.targets()) {
-                if (!target.isDestroyed()) {
-                    g.drawImage(targetImages[target.value() - 1],
-                            target.x(), target.y(), target.width(), target.height(), this);
-                }
-            }
-            for (int i = 0; i < 2; i++) {
-                Player player = model.player(i);
-                g.drawImage(planes[i], (int) player.x(), (int) player.y(),
-                        player.width(), player.height(), this);
-                Bomb bomb = model.bomb(i);
-                if (bomb.isActive()) {
-                    g.drawImage(bombImages[i], (int) bomb.x(), (int) bomb.y(),
-                            bomb.size(), bomb.size(), this);
-                }
-            }
-
-            g.setFont(hudFont.deriveFont(23f));
-            g.setColor(new Color(255, 169, 47));
-            g.drawString("Orange: " + model.score(1), 24, 92);
-            g.setFont(hudFont.deriveFont(18f));
-            g.drawString("Strikes: " + model.canyonStrikes(1) + "/" + GameRules.MAX_CANYON_STRIKES, 24, 122);
-            g.setFont(hudFont.deriveFont(23f));
-            g.setColor(new Color(98, 183, 255));
-            g.drawString("Blue: " + model.score(0), 556, 92);
-            g.setFont(hudFont.deriveFont(18f));
-            g.drawString("Strikes: " + model.canyonStrikes(0) + "/" + GameRules.MAX_CANYON_STRIKES, 556, 122);
-            g.setFont(hudFont.deriveFont(26f));
-            g.setColor(Color.WHITE);
-            g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 338, 130);
-
-            if (model.state() == GameState.PAUSED || model.state() == GameState.RESULTS) {
-                g.setColor(new Color(0, 0, 0, 170));
-                g.fillRect(80, 290, 640, 130);
-                g.setColor(Color.WHITE);
-                String message = model.state() == GameState.PAUSED ? "Paused" : model.resultText();
-                float fontSize = 30f;
-                g.setFont(hudFont.deriveFont(fontSize));
-                while (fontSize > 16f && g.getFontMetrics().stringWidth(message) > 610) {
-                    fontSize -= 2f;
-                    g.setFont(hudFont.deriveFont(fontSize));
-                }
-                int offset = g.getFontMetrics().stringWidth(message) / 2;
-                g.drawString(message, 400 - offset, 370);
-            }
-        } finally {
-            g.dispose();
-        }
-    }
+    public boolean resultsVisible() { return showingResults; }
+    public String resultText() { return results.outcomeText(); }
+    public GameCanvas canvas() { return canvas; }
 }

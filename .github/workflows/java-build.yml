@@ -29,9 +29,9 @@ jobs:
         run: mvn -B -ntp --no-transfer-progress clean verify
       - name: Check packaged JAR
         run: |
-          test -f target/airraid-0.3.0.jar
-          jar tf target/airraid-0.3.0.jar | grep -F 'Resource/General/background.png'
-          jar tf target/airraid-0.3.0.jar | grep -F 'Main.class'
+          test -f target/airraid-0.4.0.jar
+          jar tf target/airraid-0.4.0.jar | grep -F 'Resource/General/background.png'
+          jar tf target/airraid-0.4.0.jar | grep -F 'Main.class'
       - name: GUI launch smoke under virtual display
         run: |
           if ! command -v xvfb-run >/dev/null 2>&1; then
