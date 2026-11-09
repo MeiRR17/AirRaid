@@ -60,6 +60,18 @@ public final class GuiSmoke {
                         released ? "smoke-release" : "smoke-press"));
     }
 
+    private static JLabel findLabel(Component root, String fragment) {
+        if (root instanceof JLabel label && label.getText() != null
+                && label.getText().contains(fragment)) return label;
+        if (root instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JLabel found = findLabel(child, fragment);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     private static void action(Gameplay game, int keyCode) {
         key(game, keyCode, false);
         if (keyCode == KeyEvent.VK_P || keyCode == KeyEvent.VK_R
@@ -291,6 +303,11 @@ public final class GuiSmoke {
                             "Results must display populated performance cards");
                     app.setSize(620, 480);
                     app.validate();
+                    JLabel status = findLabel(app.getContentPane(),
+                            "Hit rate = hits / shots");
+                    check(status != null && status.getVisibleRect().height
+                            >= status.getFontMetrics(status.getFont()).getHeight(),
+                            "Results rate definition and QA status must be visible at 620x480");
                     captureScreenshot(app, "results-stats");
                     app.setSize(960, 800);
                     app.validate();
