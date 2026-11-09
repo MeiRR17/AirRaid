@@ -9,6 +9,8 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -49,7 +51,7 @@ public final class GuiSmoke {
     }
 
     /** Capture the actual Swing game frame in the CI virtual display. */
-    private static void captureScreenshot(Window app) {
+    private static void captureScreenshot(Window app, String screen) {
         BufferedImage capture = new BufferedImage(app.getWidth(), app.getHeight(),
                 BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = capture.createGraphics();
@@ -58,7 +60,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v050-ci-gameplay.png");
+        File output = new File("target/airraid-v060-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -72,6 +74,9 @@ public final class GuiSmoke {
     }
 
     public static void main(String[] args) throws Exception {
+        // Isolate all test preferences from runner and developer home directories.
+        Path testProfile = Files.createTempDirectory("airraid-v060-gui-profile-");
+        System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
         Main.main(new String[0]);
@@ -89,6 +94,7 @@ public final class GuiSmoke {
             check("menu".equals(app.currentScreen()), "Must start at menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
+                    && button(app.getContentPane(), "Settings") != null
                     && button(app.getContentPane(), "Exit") != null,
                     "Menu buttons missing");
 
@@ -100,6 +106,24 @@ public final class GuiSmoke {
             check(back != null, "Rules Back action missing");
             back.doClick();
             check("menu".equals(app.currentScreen()), "Rules must return to menu");
+
+            button(app.getContentPane(), "Settings").doClick();
+            check("settings".equals(app.currentScreen()), "Settings must open from menu");
+            SettingsScreen settings = app.settingsScreen();
+            check(!settings.soundToggle().isSelected()
+                    && !settings.reducedMotionToggle().isSelected()
+                    && settings.volumeSlider().getValue() == 60,
+                    "First launch must have safe settings defaults");
+            settings.volumeSlider().setValue(37);
+            settings.reducedMotionToggle().doClick();
+            check(app.preferences().reducedMotion()
+                    && app.preferences().volumePercent() == 37
+                    && !app.preferences().soundEnabled(),
+                    "User preferences must apply on the EDT");
+            captureScreenshot(app, "settings");
+            settings.backButton().doClick();
+            check("menu".equals(app.currentScreen()) && app.menuReducedMotion(),
+                    "Returning from settings must show static menu animation");
 
             start.doClick();
             Gameplay game = app.activeGame();
@@ -113,9 +137,11 @@ public final class GuiSmoke {
                     "Arena must remain square on resized window");
             app.setSize(960, 800);
             app.validate();
-            captureScreenshot(app);
+            captureScreenshot(app, "gameplay");
             check(button(app.getContentPane(), "Sound: Off") != null
-                    && !game.soundEnabled(), "Audio must be disabled by default");
+                    && !game.soundEnabled() && game.canvas().isReducedMotion()
+                    && game.appliedPreferences().volumePercent() == 37,
+                    "Persisted options must affect the active match");
 
             action(game, KeyEvent.VK_ENTER);
             action(game, KeyEvent.VK_SPACE);
@@ -133,6 +159,19 @@ public final class GuiSmoke {
             action(game, KeyEvent.VK_P);
             check(game.model().state() == GameState.RUNNING && game.timerRunning(),
                     "P must resume after viewing rules");
+
+            action(game, KeyEvent.VK_S);
+            check("settings".equals(app.currentScreen())
+                    && game.model().state() == GameState.PAUSED
+                    && !game.timerRunning(),
+                    "Settings shortcut must pause a running match");
+            settings.backButton().doClick();
+            check("game".equals(app.currentScreen())
+                    && game.model().state() == GameState.PAUSED,
+                    "Return from settings must preserve the paused match");
+            action(game, KeyEvent.VK_P);
+            check(game.model().state() == GameState.RUNNING,
+                    "P must explicitly resume after settings");
 
             action(game, KeyEvent.VK_R);
             check(game.model().score(0) == 0 && game.model().canyonStrikes(1) == 0
@@ -182,6 +221,10 @@ public final class GuiSmoke {
         if (deferredError.get() != null) {
             throw new AssertionError("Results/replay GUI smoke failed", deferredError.get());
         }
+        PreferencesStore.LoadResult persisted = PreferencesStore.forCurrentUser().load();
+        check(!persisted.recovered()
+                && persisted.preferences().equals(new UserPreferences(false, 37, true)),
+                "Settings must persist after leaving and reopening the profile store");
         System.out.println("AIRRAID_GUI_SMOKE_PASS");
         System.exit(0);
     }

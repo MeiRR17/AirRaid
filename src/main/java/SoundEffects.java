@@ -16,8 +16,25 @@ public final class SoundEffects implements AutoCloseable {
     static final int SAMPLE_RATE = 22_050;
     private final Map<Cue, Clip> clips = new EnumMap<>(Cue.class);
     private boolean enabled;
+    private int volumePercent = UserPreferences.DEFAULT_VOLUME;
 
     public boolean isEnabled() { return enabled; }
+    public int volumePercent() { return volumePercent; }
+
+    /**
+     * Apply software gain to synthesized PCM. A slider change replaces the
+     * currently open clips so the requested level is audible immediately.
+     */
+    public void setVolume(int percent) {
+        if (percent < 0 || percent > 100) {
+            throw new IllegalArgumentException("Volume must be 0..100");
+        }
+        if (volumePercent == percent) return;
+        boolean wasEnabled = enabled;
+        close();
+        volumePercent = percent;
+        if (wasEnabled) setEnabled(true);
+    }
 
     /**
      * Returns false rather than crashing if the host has no playable audio
@@ -35,7 +52,7 @@ public final class SoundEffects implements AutoCloseable {
                 AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
                 for (Cue cue : Cue.values()) {
                     Clip clip = AudioSystem.getClip();
-                    byte[] pcm = synthesize(cue);
+                    byte[] pcm = synthesize(cue, volumePercent);
                     try {
                         clip.open(format, pcm, 0, pcm.length);
                     } catch (LineUnavailableException | RuntimeException failed) {
@@ -74,7 +91,14 @@ public final class SoundEffects implements AutoCloseable {
      * All tones are mathematical waveforms authored for AirRaid.
      */
     static byte[] synthesize(Cue cue) {
+        return synthesize(cue, 100);
+    }
+
+    static byte[] synthesize(Cue cue, int volumePercent) {
         if (cue == null) throw new IllegalArgumentException("cue required");
+        if (volumePercent < 0 || volumePercent > 100) {
+            throw new IllegalArgumentException("Volume must be 0..100");
+        }
         int durationMs = switch (cue) {
             case SHOT -> 100;
             case HIT -> 160;
@@ -97,7 +121,8 @@ public final class SoundEffects implements AutoCloseable {
             // Quiet envelope: soft attack and a smooth release to zero.
             double attack = Math.min(1.0, progress * 35);
             double release = Math.pow(1.0 - progress, 1.7);
-            double sample = Math.sin(phase) * attack * release * 0.25;
+            double sample = Math.sin(phase) * attack * release
+                    * 0.25 * (volumePercent / 100.0);
             int signed = (int) Math.round(sample * Short.MAX_VALUE);
             pcm[i * 2] = (byte) signed;
             pcm[i * 2 + 1] = (byte) (signed >>> 8);

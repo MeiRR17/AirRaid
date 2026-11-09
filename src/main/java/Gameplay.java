@@ -13,6 +13,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.util.function.Consumer;
 
 /**
  * Desktop game flow: no absolute-positioned controls, independent keyboard
@@ -33,10 +34,16 @@ public final class Gameplay extends JPanel {
     private final ResultsScreen results;
     private final GameController controller;
     private final Runnable onMenu;
+    private final Consumer<UserPreferences> onPreferenceChange;
+    private UserPreferences preferences;
     private boolean showingResults;
 
-    public Gameplay(Runnable onMenu, Runnable onRules) {
+    public Gameplay(Runnable onMenu, Runnable onRules, Runnable onSettings,
+                    UserPreferences initialPreferences,
+                    Consumer<UserPreferences> onPreferenceChange) {
         this.onMenu = onMenu;
+        this.onPreferenceChange = onPreferenceChange;
+        this.preferences = initialPreferences;
         setLayout(new BorderLayout(0, 0));
         setBackground(new Color(11, 19, 37));
         setFocusable(true);
@@ -44,10 +51,15 @@ public final class Gameplay extends JPanel {
         JButton menuButton = new JButton("Menu");
         JButton restartButton = new JButton("Restart");
         JButton rulesButton = new JButton("Rules");
+        JButton settingsButton = new JButton("Settings");
+        settingsButton.setToolTipText("Open local accessibility and audio settings (S)");
+        settingsButton.getAccessibleContext().setAccessibleDescription(
+                "Open settings; active match pauses until explicitly resumed");
         menuButton.addActionListener(event -> onMenu.run());
         pauseButton.addActionListener(event -> togglePause());
         restartButton.addActionListener(event -> restartGame());
         rulesButton.addActionListener(event -> onRules.run());
+        settingsButton.addActionListener(event -> onSettings.run());
         soundButton.addActionListener(event -> toggleSound());
         soundButton.setToolTipText("Optional original audio feedback; off by default (M)");
         soundButton.getAccessibleContext().setAccessibleDescription(
@@ -57,7 +69,8 @@ public final class Gameplay extends JPanel {
         // the tab focus path avoids Swing consuming Space/Enter as button clicks
         // instead of the two players' fire commands.
         for (JButton button : new JButton[] {
-                menuButton, pauseButton, restartButton, rulesButton, soundButton
+                menuButton, pauseButton, restartButton, rulesButton,
+                settingsButton, soundButton
         }) {
             button.setFocusable(false);
             button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
@@ -68,6 +81,7 @@ public final class Gameplay extends JPanel {
         toolbar.add(pauseButton);
         toolbar.add(restartButton);
         toolbar.add(rulesButton);
+        toolbar.add(settingsButton);
         toolbar.add(soundButton);
         add(toolbar, BorderLayout.NORTH);
 
@@ -85,8 +99,8 @@ public final class Gameplay extends JPanel {
         add(status, BorderLayout.SOUTH);
 
         controller = new GameController(model, this::refresh, this::onRoundFinished);
-        installBindings(onRules);
-        refresh();
+        installBindings(onRules, onSettings);
+        applyPreferences(initialPreferences);
     }
 
     private void bind(int key, boolean released, String name, Runnable callback) {
@@ -97,7 +111,7 @@ public final class Gameplay extends JPanel {
         });
     }
 
-    private void installBindings(Runnable onRules) {
+    private void installBindings(Runnable onRules, Runnable onSettings) {
         bind(KeyEvent.VK_ENTER, false, "blue-down", () -> {
             if (model.state() == GameState.RESULTS) restartGame();
             else model.pressFire(0);
@@ -108,6 +122,7 @@ public final class Gameplay extends JPanel {
         bind(KeyEvent.VK_P, false, "pause-toggle", this::togglePause);
         bind(KeyEvent.VK_R, false, "restart", this::restartGame);
         bind(KeyEvent.VK_H, false, "rules", onRules);
+        bind(KeyEvent.VK_S, false, "settings", onSettings);
         bind(KeyEvent.VK_ESCAPE, false, "menu", onMenu);
         bind(KeyEvent.VK_M, false, "sound", this::toggleSound);
     }
@@ -144,22 +159,32 @@ public final class Gameplay extends JPanel {
                 + " strikes     ORANGE " + model.score(1) + " pts / "
                 + model.canyonStrikes(1) + " strikes     "
                 + ((model.timeRemainingMs() + 999) / 1000) + "s     "
-                + model.state() + "     Audio " + (sound.isEnabled() ? "ON" : "OFF");
+                + model.state() + "     Audio " + (sound.isEnabled() ? "ON" : "OFF")
+                + (preferences.reducedMotion() ? "     Reduced motion" : "");
         if (!message.equals(status.getText())) status.setText(message);
         canvas.repaint();
     }
 
-    private void toggleSound() {
-        if (sound.isEnabled()) {
+    /** Preferences are mirrored immediately, but only Window writes to disk. */
+    public void applyPreferences(UserPreferences next) {
+        preferences = next;
+        canvas.setReducedMotion(next.reducedMotion());
+        sound.setVolume(next.volumePercent());
+        if (!next.soundEnabled()) {
             sound.setEnabled(false);
             soundButton.setText("Sound: Off");
         } else if (sound.setEnabled(true)) {
             soundButton.setText("Sound: On");
         } else {
             soundButton.setText("Audio unavailable");
-            soundButton.setToolTipText("No usable audio output device on this computer");
+            soundButton.setToolTipText(
+                    "Audio output not available; settings remain saved");
         }
         refresh();
+    }
+
+    private void toggleSound() {
+        onPreferenceChange.accept(preferences.withSound(!preferences.soundEnabled()));
     }
 
     private void onRoundFinished() {
@@ -205,4 +230,5 @@ public final class Gameplay extends JPanel {
     public String resultText() { return results.outcomeText(); }
     public GameCanvas canvas() { return canvas; }
     public boolean soundEnabled() { return sound.isEnabled(); }
+    public UserPreferences appliedPreferences() { return preferences; }
 }

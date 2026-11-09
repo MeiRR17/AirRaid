@@ -34,6 +34,15 @@ public final class GameCanvas extends JPanel {
 
     private static final int EFFECT_LIFETIME_TICKS = 24;
     private final List<Effect> effects = new ArrayList<>();
+    private boolean reducedMotion;
+
+    public void setReducedMotion(boolean reduced) {
+        reducedMotion = reduced;
+        if (reduced) clearFeedback();
+        repaint();
+    }
+
+    public boolean isReducedMotion() { return reducedMotion; }
 
     private static final class Effect {
         final GameModel.FeedbackType type;
@@ -57,7 +66,7 @@ public final class GameCanvas extends JPanel {
      * Effects are UI-only and cannot alter any score or collision decision.
      */
     public void showFeedback(GameModel.Feedback event) {
-        if (event.type() == GameModel.FeedbackType.ROUND_FINISHED) return;
+        if (reducedMotion || event.type() == GameModel.FeedbackType.ROUND_FINISHED) return;
         if (effects.size() >= 16) effects.remove(0);
         effects.add(new Effect(event));
     }
