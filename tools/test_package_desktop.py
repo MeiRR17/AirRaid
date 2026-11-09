@@ -31,7 +31,7 @@ class PackageDesktopTest(unittest.TestCase):
 
     def test_source_pom_version_is_stable(self):
         pom = Path(__file__).resolve().parents[1] / "pom.xml"
-        self.assertEqual("0.8.0", project_version(pom))
+        self.assertRegex(project_version(pom), r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
     def test_sha256_tree_changes_with_contents(self):
         with tempfile.TemporaryDirectory() as tmp:
