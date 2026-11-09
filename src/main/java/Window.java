@@ -2,6 +2,9 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.CardLayout;
 import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.HeadlessException;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -14,6 +17,7 @@ public final class Window extends JFrame {
     private static final String GAME = "game";
     private static final String RULES = "rules";
     private static final String SETTINGS = "settings";
+    private static final String QA = "qa";
 
     private final CardLayout navigation = new CardLayout();
     private final JPanel screens = new JPanel(navigation);
@@ -22,10 +26,12 @@ public final class Window extends JFrame {
     private final GameOpening opening;
     private final RulesScreen rules;
     private final SettingsScreen settings;
+    private final QaChecklistScreen checklist;
     private Gameplay gameplay;
     private String activeCard = MENU;
     private boolean rulesReturnToGame;
     private boolean settingsReturnToGame;
+    private boolean checklistReturnToGame;
 
     public Window() {
         this(PreferencesStore.forCurrentUser());
@@ -41,15 +47,17 @@ public final class Window extends JFrame {
         setIconImage(Assets.image("/Resource/Window/gameIcon.jpg"));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         opening = new GameOpening(this::startGame, this::showRules,
-                                  this::showSettings, this::exitGame);
+                                  this::showSettings, this::showChecklist, this::exitGame);
         opening.setReducedMotion(preferences.reducedMotion());
         rules = new RulesScreen(this::returnFromRules);
         settings = new SettingsScreen(this::updatePreferences, this::returnFromSettings);
+        checklist = new QaChecklistScreen(this::returnFromChecklist, this::copyChecklist);
         settings.setPreferences(preferences);
         settings.showWarning(loaded.warning());
         screens.add(opening, MENU);
         screens.add(rules, RULES);
         screens.add(settings, SETTINGS);
+        screens.add(checklist, QA);
         setContentPane(screens);
         setPreferredSize(new Dimension(960, 800));
         setMinimumSize(new Dimension(620, 480));
@@ -91,7 +99,8 @@ public final class Window extends JFrame {
             screens.remove(gameplay);
         }
         gameplay = new Gameplay(this::returnToMenu, this::showRules,
-                this::showSettings, preferences, this::updatePreferences);
+                this::showSettings, this::showChecklist,
+                preferences, this::updatePreferences);
         screens.add(gameplay, GAME);
         showCard(GAME);
         gameplay.startGame();
@@ -135,6 +144,38 @@ public final class Window extends JFrame {
         settingsReturnToGame = false;
     }
 
+    /**
+     * Checking a step does not authenticate a tester. Copying is optional and
+     * stays entirely local; no evidence file or network request is generated.
+     */
+    private boolean copyChecklist(String report) {
+        try {
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                    new StringSelection(report), null);
+            return true;
+        } catch (HeadlessException | IllegalStateException | SecurityException unavailable) {
+            return false;
+        }
+    }
+
+    public void showChecklist() {
+        checklistReturnToGame = GAME.equals(activeCard) && gameplay != null;
+        if (checklistReturnToGame) gameplay.pauseGame();
+        showCard(QA);
+        checklist.focusFirstControl();
+    }
+
+    public void returnFromChecklist() {
+        if (checklistReturnToGame && gameplay != null) {
+            showCard(GAME);
+            gameplay.focusGame();
+        } else {
+            showCard(MENU);
+            opening.focusStartButton();
+        }
+        checklistReturnToGame = false;
+    }
+
     public void returnToMenu() {
         if (gameplay != null) {
             gameplay.disposeGame();
@@ -143,6 +184,7 @@ public final class Window extends JFrame {
         }
         rulesReturnToGame = false;
         settingsReturnToGame = false;
+        checklistReturnToGame = false;
         showCard(MENU);
         opening.focusStartButton();
     }
@@ -154,6 +196,7 @@ public final class Window extends JFrame {
     public Gameplay activeGame() { return gameplay; }
     public String currentScreen() { return activeCard; }
     public SettingsScreen settingsScreen() { return settings; }
+    public QaChecklistScreen checklistScreen() { return checklist; }
     public UserPreferences preferences() { return preferences; }
     public boolean menuReducedMotion() { return opening.reducedMotionShown(); }
 

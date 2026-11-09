@@ -72,7 +72,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v091-ci-" + screen + ".png");
+        File output = new File("target/airraid-v092-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -87,7 +87,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v091-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v092-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -104,11 +104,12 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
-            check(hasText(app.getContentPane(), "BETA 0.9.1"),
+            check(hasText(app.getContentPane(), "BETA 0.9.2"),
                     "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
                     && button(app.getContentPane(), "Settings") != null
+                    && button(app.getContentPane(), "QA checklist") != null
                     && button(app.getContentPane(), "Exit") != null,
                     "Menu buttons missing");
 
@@ -139,6 +140,19 @@ public final class GuiSmoke {
             check("menu".equals(app.currentScreen()) && app.menuReducedMotion(),
                     "Returning from settings must show static menu animation");
 
+            button(app.getContentPane(), "QA checklist").doClick();
+            check("qa".equals(app.currentScreen()), "QA checklist must open from menu");
+            QaChecklistScreen checklist = app.checklistScreen();
+            check(checklist.completedCount() == 0, "Fresh QA checklist starts empty");
+            checklist.step(0).doClick();
+            checklist.step(1).doClick();
+            check(checklist.completedCount() == 2, "Manual steps must be retained");
+            check(checklist.reportText().contains("NOT verified human playtest evidence"),
+                    "QA checklist must not claim human sign-off");
+            captureScreenshot(app, "checklist");
+            checklist.backButton().doClick();
+            check("menu".equals(app.currentScreen()), "QA Back must return to menu");
+
             start.doClick();
             Gameplay game = app.activeGame();
             check(game != null && "game".equals(app.currentScreen())
@@ -151,7 +165,7 @@ public final class GuiSmoke {
                     "Arena must remain square on resized window");
             app.setSize(960, 800);
             app.validate();
-            check(hasText(app.getContentPane(), "BETA 0.9.1"),
+            check(hasText(app.getContentPane(), "BETA 0.9.2"),
                     "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
             check(button(app.getContentPane(), "Sound: Off") != null
@@ -188,6 +202,20 @@ public final class GuiSmoke {
             action(game, KeyEvent.VK_P);
             check(game.model().state() == GameState.RUNNING,
                     "P must explicitly resume after settings");
+
+            action(game, KeyEvent.VK_Q);
+            check("qa".equals(app.currentScreen())
+                    && game.model().state() == GameState.PAUSED
+                    && !game.timerRunning(),
+                    "QA shortcut must pause match");
+            check(checklist.completedCount() == 2, "QA checks must survive card navigation");
+            checklist.backButton().doClick();
+            check("game".equals(app.currentScreen())
+                    && game.model().state() == GameState.PAUSED,
+                    "Returning from checklist must not silently resume");
+            action(game, KeyEvent.VK_P);
+            check(game.model().state() == GameState.RUNNING,
+                    "P must resume after checklist");
 
             action(game, KeyEvent.VK_R);
             check(game.model().score(0) == 0 && game.model().canyonStrikes(1) == 0

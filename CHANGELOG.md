@@ -2,6 +2,12 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.2 — Guided internal beta QA and package integrity
+- Add accessible, local-only eight-step QA checklist to menu and game toolbar with Q shortcut, explicit copy and reset; preserve active match in paused state.
+- Never classify checked boxes as externally verified human playtest sessions.
+- Detect duplicate/untracked JAR resource entries and symlinked source assets; test fail-closed integrity behavior.
+- Add real CI checklist screenshot, updated QA regression tests and Maven 0.9.2 build metadata. Public beta and production release remain blocked.
+
 ## 0.9.1 — Internal QA reporting patch
 - Add a user-triggered offline round summary on the Results screen; Clipboard failures cannot abort a match.
 - Centralize beta version display and provide a headless `--version` option for support and reproducible reports.

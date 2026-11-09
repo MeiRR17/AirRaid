@@ -56,6 +56,40 @@ class ReleaseGateTest(unittest.TestCase):
         self.assertTrue(r["public_release_ready"])
         self.assertFalse(r["blockers"])
 
+    def test_untracked_jar_resource_is_a_package_failure(self):
+        with ZipFile(self.jar, "w") as bundle:
+            bundle.writestr("Resource/Asset.png", self.sample.read_bytes())
+            bundle.writestr("Resource/Unexpected.png", b"not in manifest")
+        report = inspect(self.root, self.jar)
+        self.assertTrue(report["source_integrity"])
+        self.assertFalse(report["package_integrity"])
+        self.assertTrue(any("JAR resource inventory" in e for e in report["errors"]))
+
+    def test_duplicate_jar_resource_is_rejected(self):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            with ZipFile(self.jar, "w") as bundle:
+                bundle.writestr("Resource/Asset.png", self.sample.read_bytes())
+                bundle.writestr("Resource/Asset.png", self.sample.read_bytes())
+        report = inspect(self.root, self.jar)
+        self.assertFalse(report["package_integrity"])
+        self.assertTrue(any("duplicate resource entries" in e for e in report["errors"]))
+
+    def test_symlinked_asset_is_never_followed(self):
+        from unittest import SkipTest
+        original = self.sample.read_bytes()
+        target = self.root / "private-source.png"
+        target.write_bytes(original)
+        self.sample.unlink()
+        try:
+            self.sample.symlink_to(target)
+        except (OSError, NotImplementedError):
+            raise SkipTest("symlinks unsupported on this platform")
+        report = inspect(self.root, self.jar)
+        self.assertFalse(report["source_integrity"])
+        self.assertTrue(any("symlinked source assets" in e for e in report["errors"]))
+
     def test_extra_untracked_resource_is_rejected(self):
         (self.root / "src/main/resources/Resource/Extra.png").write_bytes(b"new")
         r = inspect(self.root, self.jar)

@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.9.1 — internal beta QA reporting and usability patch.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
+**Current development version: v0.9.2 — guided internal beta checklist and stricter package integrity.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
 
 ## Build and play
 
@@ -10,7 +10,7 @@ Requires JDK 21 and Maven 3.9+:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.9.1.jar
+java -jar target/airraid-0.9.2.jar
 ```
 
 The application runs without accounts or network access. Tests run headlessly; GitHub Actions also launches it under a virtual display, checks the game/navigation flow and uploads **real screenshots of the Settings and gameplay screens**.
@@ -30,11 +30,21 @@ For **internal QA only**, pass `--installer` to also create an **unsigned** host
 
 See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
 
+## Guided QA checklist — new in v0.9.2
+
+Select **QA checklist** from the main menu or game toolbar, or press **Q**. The in-app checklist provides eight real-world testing steps: a complete two-player round, simultaneous keyboard input, pause and settings, winner and timer, replay, sound and reduced motion, offline gameplay, and clean installation/uninstallation.
+
+Mark steps manually with checkboxes. Progress remains local to the running application, never uploaded or automatically written to disk. Press **Copy checklist** to copy a privacy-minimal, explicitly self-reported text summary to the clipboard for an issue or test record. A checkmark is **not** human verification, and it does not satisfy the beta or release gates. Opening the checklist during a match pauses the game, and returning does not resume it automatically; press P to resume.
+
+The v0.9.2 source/JAR integrity gate also detects duplicate and extra `Resource/` entries in packaged JARs and rejects symlinked source assets. This verifies package consistency, **not legal redistribution rights**. The GUI smoke now captures a real screenshot of the checklist alongside game, settings and results.
+
+See [v0.9.2 implementation](docs/V0_9_2_IMPLEMENTATION.md) and [human playtest plan](docs/BETA_PLAYTEST_PLAN.md).
+
 ## Offline QA report — new in v0.9.1
 
 After a complete round, the results screen offers **Copy QA report**. It copies a text summary containing the beta version, outcome, reason, scores, canyon strikes, time remaining, sound preference and reduced-motion setting. Copying requires an explicit button click, sends nothing over the network and creates no log or file. The report deliberately contains **no names, home paths, timestamps, device IDs or account information**. If the clipboard is unavailable, the results screen displays an explanation without crashing or losing the match.
 
-This local report is useful when submitting a beta bug report. It is **not evidence of a completed human playtest** and does not satisfy the independent three-session acceptance gate. The GUI smoke now captures the **real Results screen** as well as Settings and gameplay. Run `java -jar target/airraid-0.9.1.jar --version` to print the beta version without opening the GUI.
+This local report is useful when submitting a beta bug report. It is **not evidence of a completed human playtest** and does not satisfy the independent three-session acceptance gate. The GUI smoke now captures the **real Results screen** as well as Settings and gameplay. Run `java -jar target/airraid-0.9.2.jar --version` to print the beta version without opening the GUI.
 
 Implementation and tests: [v0.9.1 QA reporting](docs/V0_9_1_IMPLEMENTATION.md).
 
@@ -52,7 +62,7 @@ Development evidence commands:
 ```sh
 mvn -B -ntp clean verify
 python3 -m unittest discover -s tools -p 'test_*.py' -v
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.1.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.2.jar
 python3 tools/beta_gate.py --mode development
 ```
 
@@ -106,7 +116,7 @@ Development commands (after `mvn clean verify`):
 ```sh
 python3 -m unittest discover -s tools -p 'test_*.py' -v
 python3 tools/dependency_inventory.py --pom pom.xml
-python3 tools/release_gate.py --mode development --jar target/airraid-0.9.1.jar
+python3 tools/release_gate.py --mode development --jar target/airraid-0.9.2.jar
 ```
 
 The development command succeeds only when media source/JAR integrity checks pass, while still reporting legal blockers. Use `--mode release` to enforce the unresolved licensing and owner-approval gates; it must not be treated as passing until provenance and rights are independently documented.

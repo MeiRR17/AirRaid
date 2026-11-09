@@ -16,6 +16,10 @@ The v0.9.0 beta engineering scope is limited to resolving game timing accuracy, 
 
 The sessions must be observed on actual systems, with each session’s result and proof linked to a GitHub issue or independently retained internal QA record. Three test fixtures in CI are **synthetic** and never represent completed real-world sessions.
 
+## In-app checklist tool (v0.9.2)
+
+From the main menu choose **QA checklist** (or press **Q**). During a match the same action pauses the simulation; returning keeps it paused until you press **P**. The checklist shows eight tasks, and **Copy checklist** exports a self-reported status to your local clipboard without writing any session record or uploading data. **These checkboxes do not constitute evidence that the session was observed or completed.** Complete and independently review the structured sessions/triage documents below separately.
+
 ## Test protocol for each session
 
 1. Record OS/architecture, tested AirRaid commit and native installer SHA-256 in the issue/evidence reference. Do not record testers' names, personal file paths, passwords or recordings without consent.
