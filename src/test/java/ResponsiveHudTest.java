@@ -17,8 +17,8 @@ class ResponsiveHudTest {
             game.setSize(620, 480);
             game.doLayout();
             game.startGame();
-            assertEquals("BLUE 0 pts  /  0 strikes", game.hudCell(0));
-            assertEquals("ORANGE 0 pts  /  0 strikes", game.hudCell(1));
+            assertEquals("BLUE 0 pts / 0 strikes", game.hudCell(0));
+            assertEquals("ORANGE 0 pts / 0 strikes", game.hudCell(1));
             assertEquals("TIME 60s", game.hudCell(2));
             assertEquals("STATE RUNNING", game.hudCell(3));
             assertEquals("SOUND OFF", game.hudCell(4));
