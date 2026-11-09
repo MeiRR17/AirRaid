@@ -26,6 +26,8 @@ public final class GameModel {
     private final Bomb[] bombs = new Bomb[2];
     private final int[] score = new int[2];
     private final int[] canyonStrikes = new int[2];
+    private final int[] shotsLaunched = new int[2];
+    private final int[] targetsHit = new int[2];
     private final boolean[] fireHeld = new boolean[2];
     private final List<Target> targets = new ArrayList<>();
     private final List<Feedback> pendingFeedback = new ArrayList<>();
@@ -69,6 +71,8 @@ public final class GameModel {
         for (int player = 0; player < 2; player++) {
             score[player] = 0;
             canyonStrikes[player] = 0;
+            shotsLaunched[player] = 0;
+            targetsHit[player] = 0;
             fireHeld[player] = false;
         }
         remainingMs = MATCH_DURATION_MS;
@@ -122,6 +126,7 @@ public final class GameModel {
         if (state != GameState.RUNNING || fireHeld[index]) return;
         fireHeld[index] = true;
         if (bombs[index].launch(planes[index])) {
+            shotsLaunched[index]++;
             pendingFeedback.add(new Feedback(FeedbackType.SHOT, index,
                     bombs[index].x(), bombs[index].y(), 0));
         }
@@ -207,6 +212,7 @@ public final class GameModel {
             } else if (!impact.target().isDestroyed()) {
                 int awarded = impact.target().hit();
                 score[player] += awarded;
+                targetsHit[player]++;
                 pendingFeedback.add(new Feedback(FeedbackType.TARGET_HIT, player,
                         impact.target().x() + impact.target().width() / 2.0,
                         impact.target().y() + impact.target().height() / 2.0,
@@ -259,6 +265,26 @@ public final class GameModel {
     public int timeRemainingMs() { return remainingMs; }
     public int score(int index) { validatePlayer(index); return score[index]; }
     public int canyonStrikes(int index) { validatePlayer(index); return canyonStrikes[index]; }
+    /** Counts only projectiles actually launched, not repeated key-downs. */
+    public int shotsLaunched(int index) {
+        validatePlayer(index);
+        return shotsLaunched[index];
+    }
+    /** Counts only uniquely destroyed targets, not contested double contacts. */
+    public int targetsHit(int index) {
+        validatePlayer(index);
+        return targetsHit[index];
+    }
+    /**
+     * Targets destroyed per successfully launched projectile (rounded percent).
+     * At round end, a shot still in flight counts as a launch, not a hit.
+     */
+    public int hitRatePercent(int index) {
+        validatePlayer(index);
+        return shotsLaunched[index] == 0 ? 0
+                : (100 * targetsHit[index] + shotsLaunched[index] / 2)
+                    / shotsLaunched[index];
+    }
     public Player player(int index) { validatePlayer(index); return planes[index]; }
     public Bomb bomb(int index) { validatePlayer(index); return bombs[index]; }
     public List<Target> targets() { return Collections.unmodifiableList(targets); }

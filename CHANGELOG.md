@@ -2,13 +2,20 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.5 — Match statistics and result performance cards
+- Count actual launched shots and uniquely destroyed targets per player inside the deterministic game engine.
+- Display shot/hit totals and rounded hit rates for Blue and Orange on the Results screen.
+- Include identical non-sensitive performance metrics in the local opt-in QA report.
+- Verify key-repeat immunity, contested-target fairness, accurate hit rates and replay resets.
+- Capture a real populated Results screen at 620×480 in CI; no production release or license approvals claimed.
+
 ## 0.9.4 — Keyboard-repeat protection and pause guidance
 - Prevent repeated P, R and M shortcut actions while the key remains held; restore actions on release and after focus navigation.
 - Present a static MATCH PAUSED overlay with explicit Resume instructions and frozen-clock reassurance.
 - Add deterministic key-repeat regression tests and a real pause-state screenshot in CI.
 - Preserve Enter/Space two-player fire behavior and existing media/license release blockers.
 
-## 0.9.4 — Responsive scoreboard and results safety
+## 0.9.5 — Responsive scoreboard and results safety
 - Replace long single-line match status with a six-cell, high-contrast 2×3 scoreboard for points, strikes, clock, game state, audio and beta build.
 - Prevent repeated Enter (blue fire) from accidentally replaying a finished round; keep explicit Play again and R.
 - Add accessible HUD tests, key-repeat regression and a true 620×480 game screenshot under CI.

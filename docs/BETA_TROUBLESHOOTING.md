@@ -4,7 +4,7 @@
 
 ## Common issues
 
-**The game window does not open.** From a source checkout with JDK 21 and Maven 3.9+, run `mvn -B -ntp clean verify` and `java -jar target/airraid-0.9.4.jar`. For a built native app image, use its launcher with `--self-test` to verify its embedded Java runtime and media; this is not a graphical functional test. If the launcher displays `AIRRAID_ERROR code=STARTUP`, record OS, version and the stable code rather than private home paths or stack traces.
+**The game window does not open.** From a source checkout with JDK 21 and Maven 3.9+, run `mvn -B -ntp clean verify` and `java -jar target/airraid-0.9.5.jar`. For a built native app image, use its launcher with `--self-test` to verify its embedded Java runtime and media; this is not a graphical functional test. If the launcher displays `AIRRAID_ERROR code=STARTUP`, record OS, version and the stable code rather than private home paths or stack traces.
 
 **The game seems slower than a real 60-second round.** In v0.9.0, the simulation uses measured monotonic elapsed time instead of assuming every repaint happens exactly after 16ms. Confirm that the game is not **Paused** or off-focus; pause time intentionally does not count.
 
@@ -20,4 +20,4 @@
 
 ## Beta issue reporting checklist
 
-Provide version `0.9.4`, OS/architecture, source commit or SHA-256 (if available), expected and actual outcomes, keyboard steps, whether the issue survives restart, and a screenshot with no personal information if useful. Classify P0 (crash/data/security blocking release), P1 (core game/install unusable), P2 (minor gameplay/UI), P3 (cosmetic). Link reproducible defects to the beta triage; do not count simulated playtests as human testing.
+Provide version `0.9.5`, OS/architecture, source commit or SHA-256 (if available), expected and actual outcomes, keyboard steps, whether the issue survives restart, and a screenshot with no personal information if useful. Classify P0 (crash/data/security blocking release), P1 (core game/install unusable), P2 (minor gameplay/UI), P3 (cosmetic). Link reproducible defects to the beta triage; do not count simulated playtests as human testing.
