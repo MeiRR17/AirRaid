@@ -1,18 +1,51 @@
-Game Mechanics:
+AIR RAID — CANONICAL GAME RULES (v0.3.0)
 
-The game has 2 players who control planes that automatically fly.
-The players can only launch bombs to destroy objects on the canyon.
-The objects are placed in specific locations: 4 points, 3 points, 2 points and 1 point, can be placed according to their rarity.
-Each player can only launch one bomb at a time.
-Once an object is destroyed, it does not reappear.
-If a player hits the canyon 4 times, they lose the game.
+GAME
+Two local players each control an automatically moving plane. Players cannot steer.
+Blue fires using Enter. Orange fires using Space.
+Press/release once per shot: holding the key does not automatically fire again.
+A player can have at most one active bomb. Another shot is available only after
+the current bomb has hit an intact target or left the field without scoring.
 
-Winning and Losing:
+TARGETS AND POINTS
+There are 8 rows and 38 columns of targets. Each pair of rows is worth 1, 2,
+3 or 4 points (top to bottom), for a total of four point tiers.
+Each target may be destroyed once. Its points go only to the first bomb
+to reach it; no target may be scored twice.
+When both bombs reach the same target at exactly the same time, the priority
+alternates between Blue and Orange, beginning with Blue each new match.
+The player who loses the exact tie keeps the bomb in flight.
 
-The player who destroys the most objects without hitting the canyon wins the game.
-If both players have the same number of destroyed objects, the game is a tie.
+CANYON STRIKES (the original 'four canyon hits' rule)
+A launched bomb that leaves the playfield by the left edge, right edge or
+bottom without destroying a previously intact target causes ONE canyon strike
+for the player who fired it. Successfully hitting a target causes no strike.
+On the fourth strike, that player immediately loses, regardless of score.
+If both players take their fourth strike during the same simulation step,
+the result is a draw.
 
-Controls:
+TIME LIMIT AND WINNER
+Each match lasts up to 60 seconds of simulated game time. At 0 seconds,
+the highest score wins; equal scores produce a tie.
+A fourth canyon strike takes priority over the clock even if both occur in
+the same simulation step. Events for both players are resolved before the
+match outcome is decided. After the result, no further shots or score updates
+are allowed.
 
-To fire with orange player press space.
-To fire with blue player press enter.
+CONTROLS AND FLOW
+Enter: Blue fire.
+Space: Orange fire.
+P: Pause/resume the match.
+R: Restart a fresh match.
+Buttons: Start, Pause/Resume, Restart, Menu.
+Pause freezes the match timer and plane/bomb movement.
+Restart clears scores, strikes, targets, bombs, winner, and held-key state.
+
+IMPLEMENTATION NOTE
+A single Swing EDT timer drives a fixed-step model; no background worker
+threads are used. Collision detection is continuous within each simulation
+step to avoid passing through thin targets.
+
+This rulebook supersedes the original ambiguous "hit the canyon 4 times"
+instruction. The original project did not define whether a bomb missing
+a target counted as a canyon hit, so v0.3.0 formalizes that behavior.

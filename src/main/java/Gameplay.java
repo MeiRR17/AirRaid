@@ -55,6 +55,10 @@ public final class Gameplay extends JPanel {
             pause.setText("Pause");
             requestFocusInWindow();
         });
+        // Focused buttons intercept the fire keys before panel bindings.
+        menu.setFocusable(false);
+        pause.setFocusable(false);
+        restart.setFocusable(false);
         add(menu);
         add(pause);
         add(restart);
@@ -79,6 +83,10 @@ public final class Gameplay extends JPanel {
         bind(KeyEvent.VK_SPACE, false, "orange-down", () -> model.pressFire(1));
         bind(KeyEvent.VK_SPACE, true, "orange-up", () -> model.releaseFire(1));
         bind(KeyEvent.VK_P, false, "pause-toggle", this::togglePause);
+        bind(KeyEvent.VK_R, false, "restart", () -> {
+            controller.startNewGame();
+            pause.setText("Pause");
+        });
     }
 
     public void startGame() {
@@ -135,20 +143,31 @@ public final class Gameplay extends JPanel {
                 }
             }
 
-            g.setFont(hudFont);
+            g.setFont(hudFont.deriveFont(23f));
             g.setColor(new Color(255, 169, 47));
             g.drawString("Orange: " + model.score(1), 24, 92);
+            g.setFont(hudFont.deriveFont(18f));
+            g.drawString("Strikes: " + model.canyonStrikes(1) + "/" + GameRules.MAX_CANYON_STRIKES, 24, 122);
+            g.setFont(hudFont.deriveFont(23f));
             g.setColor(new Color(98, 183, 255));
-            g.drawString("Blue: " + model.score(0), 560, 92);
+            g.drawString("Blue: " + model.score(0), 556, 92);
+            g.setFont(hudFont.deriveFont(18f));
+            g.drawString("Strikes: " + model.canyonStrikes(0) + "/" + GameRules.MAX_CANYON_STRIKES, 556, 122);
+            g.setFont(hudFont.deriveFont(26f));
             g.setColor(Color.WHITE);
-            g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 334, 130);
+            g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 338, 130);
 
             if (model.state() == GameState.PAUSED || model.state() == GameState.RESULTS) {
                 g.setColor(new Color(0, 0, 0, 170));
                 g.fillRect(80, 290, 640, 130);
                 g.setColor(Color.WHITE);
-                g.setFont(hudFont.deriveFont(32f));
                 String message = model.state() == GameState.PAUSED ? "Paused" : model.resultText();
+                float fontSize = 30f;
+                g.setFont(hudFont.deriveFont(fontSize));
+                while (fontSize > 16f && g.getFontMetrics().stringWidth(message) > 610) {
+                    fontSize -= 2f;
+                    g.setFont(hudFont.deriveFont(fontSize));
+                }
                 int offset = g.getFontMetrics().stringWidth(message) / 2;
                 g.drawString(message, 400 - offset, 370);
             }

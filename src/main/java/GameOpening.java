@@ -36,7 +36,9 @@ public final class GameOpening extends JPanel {
         center.add(Box.createRigidArea(new Dimension(0, 20)));
 
         JLabel rules = new JLabel("<html><div style='text-align:center'>Blue: Enter &nbsp; | &nbsp; Orange: Space<br>"
-                + "Destroy targets to earn points. One-minute match.</div></html>", SwingConstants.CENTER);
+                + "Targets: 1–4 points. A missed bomb counts as a canyon strike.<br>"
+                + "Four strikes lose the round. Otherwise, the high score wins at 60 seconds.</div></html>",
+                SwingConstants.CENTER);
         rules.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
         rules.setForeground(Color.WHITE);
         rules.setAlignmentX(CENTER_ALIGNMENT);

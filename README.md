@@ -1,53 +1,61 @@
 # AirRaid
 
-AirRaid is an **offline two-player desktop arcade game** written in Java 21 and Swing. It is not an emergency-alert service.
+An offline, **two-player Java Swing arcade game**. Two automatically flying planes compete to destroy targets while avoiding canyon strikes. AirRaid is a game, **not** an emergency alerting application.
 
-**Current milestone: v0.2.0 — deterministic game engine and lifecycle.** It is a development build, not a production release.
+**Development version: v0.3.0 — gameplay rules and scoring.** This is not yet a production-ready desktop distribution.
 
 ## Build and run
 
-Requires **JDK 21** and **Maven 3.9+**:
+Install **JDK 21** and **Maven 3.9+**, then run:
 
 ```sh
 mvn -B -ntp clean verify
-java -jar target/airraid-0.2.0.jar
+java -jar target/airraid-0.3.0.jar
 ```
 
-The JAR includes all original graphics and fonts. A desktop graphical session is required to play; engine and resource tests run headlessly. The CI build also launches the game under a virtual display to check the GUI lifecycle.
+The runnable JAR bundles all graphics and fonts. For a GUI smoke test, GitHub Actions launches the application under Xvfb and checks Start, Pause, Resume, Restart, Menu and disposal. Normal unit tests run headlessly.
 
-## Controls and game flow
+## Controls
 
-| Player | Key |
+| Player | Action |
 | --- | --- |
-| Blue | Enter — fire |
-| Orange | Space — fire |
-| Either | P — pause/resume |
+| Blue | **Enter** — launch bomb |
+| Orange | **Space** — launch bomb |
+| Both | **P** — pause/resume, **R** — restart |
+| Menu | Buttons: **Start**, **Pause/Resume**, **Restart**, **Menu** |
 
-Use **Start** to begin, **Pause/Resume** to control the simulation, **Restart** for a fresh match, and **Menu** to stop and return to the title screen. Each player has at most one active bomb. Targets score 1–4 points once each. The existing time limit is 60 seconds; when the time expires the winner/tie is displayed.
+Hold-and-repeat does not auto-fire. Each player can have only one live bomb at a time.
 
-### Architecture
+## Rules (v0.3.0)
 
-- `GameModel` owns the simulation state, planes, bombs, targets, scoring and fixed time steps. It is deterministic and has **no background worker threads**.
-- `GameController` drives a **single Swing Timer** on the EDT, and controls start/pause/resume/disposal.
-- `Gameplay` renders from the model and maps keyboard actions to model input. `Window` owns menu/game transitions and disposes old simulations.
-- `Assets` loads original binary media from the classpath; the Maven build embeds it in the runnable JAR.
+- **Targets:** four score tiers worth 1–4 points, arranged in eight rows. An intact target may award points only once.
+- **Canyon strikes:** a bomb that exits the left, right or lower edge without destroying a target gives its owner **one strike**. A scored hit does not add a strike.
+- **Four-strike loss:** reaching four strikes immediately loses the round, regardless of the score. If both players reach four on the same simulation step, the result is a draw.
+- **60-second clock:** if no one has lost by strikes, the player with the most points wins at the end; equal scores are a tie.
+- **Simultaneous events:** all events in a simulation step count before declaring a winner. Strikes take precedence over the timer at the same step; an exact two-bomb hit on the same target awards it once, with alternating tie priority beginning with Blue.
+- **Pause/restart:** pause freezes simulation; restart completely clears points, strikes, targets and held input.
 
-**Known limits:** four-canyon-hit rule in the old `Instructions/About` does not yet match the game engine (v0.3.0); final polishing, accessibility and installer packaging are later milestones. This version intentionally does **not** claim public production readiness. No network accounts are needed.
+The complete specification, edge-case rules, and tests are documented in [Game Rules v0.3.0](docs/V0_3_GAME_RULES.md) and [Instructions/About](Instructions/About).
 
-## Plans and evidence
+## Architecture and tests
 
-- [Production roadmap](docs/ROADMAP.md)
+`GameModel` owns deterministic scoring, collision events and match outcomes. `GameRules` defines bounds, target tiers, the time limit and swept collision geometry. `GameController` drives one Swing EDT timer and stops on a result. `Gameplay` displays two scores, the remaining time, and both canyon strike counts. The test suite includes boundary exits, score durability, simultaneous collisions, ties, pause and restart, as well as GUI lifecycle smoke tests.
+
+## Roadmap
+
+- [Production roadmap to v1.0.0](docs/ROADMAP.md)
+- [Progress tracker](https://github.com/MeiRR17/AirRaid/issues/3)
+- [Production release checklist](docs/RELEASE_CHECKLIST.md)
 - [Legacy baseline audit](docs/BASELINE_AUDIT.md)
-- [v0.2.0 engine implementation notes](docs/V0_2_IMPLEMENTATION.md)
-- [Release gates](docs/RELEASE_CHECKLIST.md)
-- [Version tracker](https://github.com/MeiRR17/AirRaid/issues/3)
 
-## Screenshots from the original project (not this new build)
+**Next:** v0.4.0 (polished game flow, scalable layout, focus/accessibility and responsive UI). Cross-platform native installers, rights review, and real user playtests still remain before v1.0.0.
 
-![Original AirRaid game](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
+## Original project screenshots (not screenshots of v0.3.0)
 
-![Original AirRaid game](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
+![Original game screenshot](https://github.com/user-attachments/assets/629c0620-b8be-4053-b602-7febd0c01265)
 
-## Licensing
+![Original game screenshot](https://github.com/user-attachments/assets/2a287550-8de7-4c5b-adc0-a0b2d8361b4a)
 
-Before redistributing bundled images, animation or fonts in a public binary, verify each asset's rights and attribution. See the release checklist.
+## License
+
+Before distributing a public installer, verify rights to each bundled sprite, font, GIF and image; see the [release checklist](docs/RELEASE_CHECKLIST.md).

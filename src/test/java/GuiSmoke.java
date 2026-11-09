@@ -1,6 +1,10 @@
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JComponent;
+import javax.swing.KeyStroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.Component;
 import java.awt.Container;
 
@@ -26,6 +30,16 @@ public final class GuiSmoke {
         return null;
     }
 
+    private static void fire(Gameplay game, int keyCode) {
+        Object binding = game.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .get(KeyStroke.getKeyStroke(keyCode, 0, false));
+        if (binding == null || game.getActionMap().get(binding) == null) {
+            throw new AssertionError("Missing independent player fire binding: " + keyCode);
+        }
+        game.getActionMap().get(binding).actionPerformed(
+                new ActionEvent(game, ActionEvent.ACTION_PERFORMED, "fire"));
+    }
+
     public static void main(String[] args) throws Exception {
         Main.main(new String[0]);
         SwingUtilities.invokeAndWait(() -> {
@@ -49,6 +63,12 @@ public final class GuiSmoke {
                     || !gameplay.timerRunning()) {
                 throw new AssertionError("Gameplay did not start");
             }
+            fire(gameplay, KeyEvent.VK_ENTER);
+            fire(gameplay, KeyEvent.VK_SPACE);
+            if (!gameplay.model().bomb(0).isActive()
+                    || !gameplay.model().bomb(1).isActive()) {
+                throw new AssertionError("Players' fire bindings must be independent");
+            }
             gameplay.pauseGame();
             if (gameplay.model().state() != GameState.PAUSED || gameplay.timerRunning()) {
                 throw new AssertionError("Pause did not stop timer");
@@ -63,8 +83,12 @@ public final class GuiSmoke {
             }
             restart.doClick();
             if (gameplay.model().state() != GameState.RUNNING
-                    || gameplay.model().score(0) != 0) {
-                throw new AssertionError("Restart did not reset match");
+                    || gameplay.model().score(0) != 0
+                    || gameplay.model().canyonStrikes(0) != 0
+                    || gameplay.model().canyonStrikes(1) != 0
+                    || gameplay.model().bomb(0).isActive()
+                    || gameplay.model().bomb(1).isActive()) {
+                throw new AssertionError("Restart did not fully reset match");
             }
             frame.returnToMenu();
             if (gameplay.timerRunning() || gameplay.model().state() != GameState.STOPPED
