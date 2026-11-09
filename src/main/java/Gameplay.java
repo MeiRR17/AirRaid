@@ -181,7 +181,7 @@ public final class Gameplay extends JPanel {
         setHud(2, "TIME " + ((model.timeRemainingMs() + 999) / 1000) + "s");
         setHud(3, "STATE " + model.state());
         setHud(4, "SOUND " + (sound.isEnabled() ? "ON" : "OFF")
-                + (preferences.reducedMotion() ? "  /  LOW MOTION" : ""));
+                + (preferences.reducedMotion() ? " / REDUCED" : ""));
         setHud(5, "BETA " + AppVersion.NUMBER);
         canvas.repaint();
     }
@@ -192,6 +192,16 @@ public final class Gameplay extends JPanel {
 
     /** Returns the visible text of a single scoreboard cell for accessibility tests. */
     String hudCell(int index) { return hudLabels[index].getText(); }
+
+    /** Confirm the complete content of each status cell fits its rendered width. */
+    boolean hudTextFits() {
+        for (JLabel label : hudLabels) {
+            if (label.getWidth() <= 0
+                    || label.getFontMetrics(label.getFont()).stringWidth(label.getText())
+                        > label.getWidth() - 4) return false;
+        }
+        return true;
+    }
 
     /** Preferences are mirrored immediately, but only Window writes to disk. */
     public void applyPreferences(UserPreferences next) {
