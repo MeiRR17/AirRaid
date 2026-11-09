@@ -30,15 +30,15 @@ jobs:
         run: mvn -B -ntp --no-transfer-progress clean verify
       - name: Check packaged JAR
         run: |
-          test -f target/airraid-0.9.4.jar
-          jar tf target/airraid-0.9.4.jar | grep -F 'Resource/General/background.png'
-          jar tf target/airraid-0.9.4.jar | grep -F 'Main.class'
-          java -jar target/airraid-0.9.4.jar --version | grep -F 'AirRaid 0.9.4 / INTERNAL BETA'
+          test -f target/airraid-0.9.5.jar
+          jar tf target/airraid-0.9.5.jar | grep -F 'Resource/General/background.png'
+          jar tf target/airraid-0.9.5.jar | grep -F 'Main.class'
+          java -jar target/airraid-0.9.5.jar --version | grep -F 'AirRaid 0.9.5 / INTERNAL BETA'
       - name: Asset provenance and dependency inventory (development mode)
         run: |
           python3 -m unittest discover -s tools -p 'test_*.py' -v
           python3 tools/dependency_inventory.py --pom pom.xml --output target/dependency-inventory.json
-          python3 tools/release_gate.py --mode development --jar target/airraid-0.9.4.jar --output target/release-readiness.json
+          python3 tools/release_gate.py --mode development --jar target/airraid-0.9.5.jar --output target/release-readiness.json
           python3 tools/beta_gate.py --mode development --output target/beta-readiness.json
       - name: Build and smoke Linux app image with bundled Java 21
         run: |
@@ -57,14 +57,15 @@ jobs:
       - name: Publish actual game screenshot
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: airraid-v094-gui-captures
+          name: airraid-v095-gui-captures
           path: |
-            target/airraid-v094-ci-settings.png
-            target/airraid-v094-ci-gameplay.png
-            target/airraid-v094-ci-compact-hud.png
-            target/airraid-v094-ci-paused.png
-            target/airraid-v094-ci-results.png
-            target/airraid-v094-ci-checklist.png
+            target/airraid-v095-ci-settings.png
+            target/airraid-v095-ci-gameplay.png
+            target/airraid-v095-ci-compact-hud.png
+            target/airraid-v095-ci-paused.png
+            target/airraid-v095-ci-results.png
+            target/airraid-v095-ci-results-stats.png
+            target/airraid-v095-ci-checklist.png
             target/release-readiness.json
             target/dependency-inventory.json
             target/desktop-evidence-linux.json

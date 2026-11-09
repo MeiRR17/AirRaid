@@ -47,7 +47,7 @@ jobs:
         run: |
           python -m unittest discover -s tools -p 'test_*.py' -v
           python tools/dependency_inventory.py --pom pom.xml
-          python tools/release_gate.py --mode development --jar target/airraid-0.9.4.jar
+          python tools/release_gate.py --mode development --jar target/airraid-0.9.5.jar
       - name: Build native app image and smoke bundled JVM
         shell: bash
         env:
@@ -61,7 +61,7 @@ jobs:
       - name: Upload evidence only (never signed/unsigned binaries)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: airraid-v094-${{ matrix.platform }}-internal-evidence
+          name: airraid-v095-${{ matrix.platform }}-internal-evidence
           path: |
             target/desktop-evidence-*.json
             target/release-readiness.json

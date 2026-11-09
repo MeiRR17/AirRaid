@@ -60,6 +60,18 @@ public final class GuiSmoke {
                         released ? "smoke-release" : "smoke-press"));
     }
 
+    private static JLabel findLabel(Component root, String fragment) {
+        if (root instanceof JLabel label && label.getText() != null
+                && label.getText().contains(fragment)) return label;
+        if (root instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JLabel found = findLabel(child, fragment);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     private static void action(Gameplay game, int keyCode) {
         key(game, keyCode, false);
         if (keyCode == KeyEvent.VK_P || keyCode == KeyEvent.VK_R
@@ -82,7 +94,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v094-ci-" + screen + ".png");
+        File output = new File("target/airraid-v095-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -97,7 +109,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v094-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v095-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -114,7 +126,7 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
-            check(hasText(app.getContentPane(), "BETA 0.9.4"),
+            check(hasText(app.getContentPane(), "BETA 0.9.5"),
                     "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
@@ -186,7 +198,7 @@ public final class GuiSmoke {
             captureScreenshot(app, "compact-hud");
             app.setSize(960, 800);
             app.validate();
-            check(hasText(app.getContentPane(), "BETA 0.9.4"),
+            check(hasText(app.getContentPane(), "BETA 0.9.5"),
                     "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
             key(game, KeyEvent.VK_P, false);
@@ -267,6 +279,10 @@ public final class GuiSmoke {
             }
 
             final Gameplay finishedGame = game;
+            // Exercise the real shot/hit counters, not an empty round.
+            finishedGame.model().pressFire(0);
+            finishedGame.model().pressFire(1);
+            finishedGame.model().tick(1_800);
             finishedGame.model().tick(GameModel.MATCH_DURATION_MS);
             check(finishedGame.model().state() == GameState.RESULTS,
                     "Time limit must produce results");
@@ -275,11 +291,26 @@ public final class GuiSmoke {
                 try {
                     check(finishedGame.resultsVisible(), "Results card did not appear");
                     check(!finishedGame.timerRunning(), "Timer remained active after results");
-                    check("It's a tie!".equals(finishedGame.resultText()), "Tie summary missing");
+                    check(finishedGame.resultText().equals(
+                            finishedGame.model().resultText()), "Result text mismatch");
                     String report = finishedGame.completedQaReport();
-                    check(report != null && report.contains("Winner: DRAW")
+                    check(report != null
+                            && report.contains("Blue shots launched: 1")
+                            && report.contains("Orange shots launched: 1")
                             && report.contains("NOT verified human playtest evidence"),
-                            "QA report must reflect the completed match");
+                            "QA report must reflect actual launched shots");
+                    check(hasText(app.getContentPane(), "Shots 1"),
+                            "Results must display populated performance cards");
+                    app.setSize(620, 480);
+                    app.validate();
+                    JLabel status = findLabel(app.getContentPane(),
+                            "Hit rate = hits / shots");
+                    check(status != null && status.getVisibleRect().height
+                            >= status.getFontMetrics(status.getFont()).getHeight(),
+                            "Results rate definition and QA status must be visible at 620x480");
+                    captureScreenshot(app, "results-stats");
+                    app.setSize(960, 800);
+                    app.validate();
                     JButton copy = button(finishedGame, "Copy QA report");
                     check(copy != null, "Offline QA report action missing");
                     copy.doClick();
