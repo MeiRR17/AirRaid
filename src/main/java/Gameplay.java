@@ -10,6 +10,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -30,7 +31,9 @@ public final class Gameplay extends JPanel {
     private final GameCanvas canvas = new GameCanvas(model);
     private final CardLayout centerNavigation = new CardLayout();
     private final JPanel centerCards = new JPanel(centerNavigation);
-    private final JLabel status = new JLabel();
+    /** Six concise status cells remain readable in a 620px-wide window. */
+    private final JLabel[] hudLabels = new JLabel[6];
+    private final JPanel hud = new JPanel(new GridLayout(2, 3, 6, 3));
     private final JButton pauseButton = new JButton("Pause");
     private final JButton soundButton = new JButton("Sound: Off");
     private final SoundEffects sound = new SoundEffects();
@@ -97,13 +100,21 @@ public final class Gameplay extends JPanel {
         centerCards.add(results, RESULTS);
         add(centerCards, BorderLayout.CENTER);
 
-        status.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-        status.setForeground(Color.WHITE);
-        status.setBackground(new Color(21, 38, 60));
-        status.setOpaque(true);
-        status.setBorder(BorderFactory.createEmptyBorder(9, 12, 9, 12));
-        status.getAccessibleContext().setAccessibleName("Game state and scores");
-        add(status, BorderLayout.SOUTH);
+        hud.setBackground(new Color(21, 38, 60));
+        hud.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        String[] names = {"Blue points and strikes", "Orange points and strikes",
+                "Remaining match time", "Match state",
+                "Sound and reduced motion status", "Development build version"};
+        for (int index = 0; index < hudLabels.length; index++) {
+            JLabel label = new JLabel("", JLabel.CENTER);
+            label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
+            label.setForeground(index == 0 ? new Color(129, 205, 255)
+                    : index == 1 ? new Color(255, 185, 123) : Color.WHITE);
+            label.getAccessibleContext().setAccessibleName(names[index]);
+            hudLabels[index] = label;
+            hud.add(label);
+        }
+        add(hud, BorderLayout.SOUTH);
 
         controller = new GameController(model, this::refresh, this::onRoundFinished);
         installBindings(onRules, onSettings, onChecklist);
@@ -119,10 +130,10 @@ public final class Gameplay extends JPanel {
     }
 
     private void installBindings(Runnable onRules, Runnable onSettings, Runnable onChecklist) {
-        bind(KeyEvent.VK_ENTER, false, "blue-down", () -> {
-            if (model.state() == GameState.RESULTS) restartGame();
-            else model.pressFire(0);
-        });
+        // Enter must never accidentally clear a finished round when the
+        // player continues holding their blue-fire key at the results screen.
+        // Replay requires the explicit Play again button or R shortcut.
+        bind(KeyEvent.VK_ENTER, false, "blue-down", () -> model.pressFire(0));
         bind(KeyEvent.VK_ENTER, true, "blue-up", () -> model.releaseFire(0));
         bind(KeyEvent.VK_SPACE, false, "orange-down", () -> model.pressFire(1));
         bind(KeyEvent.VK_SPACE, true, "orange-up", () -> model.releaseFire(1));
@@ -163,16 +174,33 @@ public final class Gameplay extends JPanel {
                 sound.play(SoundEffects.Cue.ROUND_END);
             }
         }
-        String message = "BLUE " + model.score(0) + " pts / " + model.canyonStrikes(0)
-                + " strikes     ORANGE " + model.score(1) + " pts / "
-                + model.canyonStrikes(1) + " strikes     "
-                + ((model.timeRemainingMs() + 999) / 1000) + "s     "
-                + model.state() + "     BETA " + AppVersion.NUMBER
-                + "     Audio "
-                + (sound.isEnabled() ? "ON" : "OFF")
-                + (preferences.reducedMotion() ? "     Reduced motion" : "");
-        if (!message.equals(status.getText())) status.setText(message);
+        setHud(0, "BLUE " + model.score(0) + " pts / "
+                + model.canyonStrikes(0) + " strikes");
+        setHud(1, "ORANGE " + model.score(1) + " pts / "
+                + model.canyonStrikes(1) + " strikes");
+        setHud(2, "TIME " + ((model.timeRemainingMs() + 999) / 1000) + "s");
+        setHud(3, "STATE " + model.state());
+        setHud(4, "SOUND " + (sound.isEnabled() ? "ON" : "OFF")
+                + (preferences.reducedMotion() ? " / REDUCED" : ""));
+        setHud(5, "BETA " + AppVersion.NUMBER);
         canvas.repaint();
+    }
+
+    private void setHud(int index, String value) {
+        if (!value.equals(hudLabels[index].getText())) hudLabels[index].setText(value);
+    }
+
+    /** Returns the visible text of a single scoreboard cell for accessibility tests. */
+    String hudCell(int index) { return hudLabels[index].getText(); }
+
+    /** Confirm the complete content of each status cell fits its rendered width. */
+    boolean hudTextFits() {
+        for (JLabel label : hudLabels) {
+            if (label.getWidth() <= 0
+                    || label.getFontMetrics(label.getFont()).stringWidth(label.getText())
+                        > label.getWidth() - 4) return false;
+        }
+        return true;
     }
 
     /** Preferences are mirrored immediately, but only Window writes to disk. */

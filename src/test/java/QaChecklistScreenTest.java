@@ -20,7 +20,7 @@ class QaChecklistScreenTest {
             assertEquals(2, qa.completedCount());
             assertNull(copy.get(), "no implicit clipboard write or telemetry");
             String report = qa.reportText();
-            assertTrue(report.contains("AirRaid 0.9.2"));
+            assertTrue(report.contains("AirRaid " + AppVersion.NUMBER));
             assertTrue(report.contains("NOT verified human playtest evidence"));
             assertTrue(report.contains("Checked: 2/8"));
             assertTrue(report.contains("[x] " + QaChecklistScreen.STEPS[0]));

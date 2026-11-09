@@ -72,7 +72,7 @@ public final class GuiSmoke {
         } finally {
             graphics.dispose();
         }
-        File output = new File("target/airraid-v092-ci-" + screen + ".png");
+        File output = new File("target/airraid-v093-ci-" + screen + ".png");
         if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
             throw new AssertionError("Unable to create capture directory");
         }
@@ -87,7 +87,7 @@ public final class GuiSmoke {
 
     public static void main(String[] args) throws Exception {
         // Isolate all test preferences from runner and developer home directories.
-        Path testProfile = Files.createTempDirectory("airraid-v092-gui-profile-");
+        Path testProfile = Files.createTempDirectory("airraid-v093-gui-profile-");
         System.setProperty("user.home", testProfile.toString());
         CountDownLatch resultsChecked = new CountDownLatch(1);
         AtomicReference<Throwable> deferredError = new AtomicReference<>();
@@ -104,7 +104,7 @@ public final class GuiSmoke {
             final Window app = frame;
             check(app.isResizable(), "Window must be resizable");
             check("menu".equals(app.currentScreen()), "Must start at menu");
-            check(hasText(app.getContentPane(), "BETA 0.9.2"),
+            check(hasText(app.getContentPane(), "BETA 0.9.3"),
                     "Beta version must be visibly identified on main menu");
             JButton start = button(app.getContentPane(), "Start");
             check(start != null && button(app.getContentPane(), "Rules") != null
@@ -163,9 +163,20 @@ public final class GuiSmoke {
             check(viewport.width() > 0 && viewport.height() > 0
                     && Math.abs(viewport.width() - viewport.height()) <= 1,
                     "Arena must remain square on resized window");
+            // Compact dimensions are common on 125–200% display scaling.
+            app.setSize(620, 480);
+            app.validate();
+            check(game.hudCell(0).contains("BLUE 0 pts")
+                    && game.hudCell(1).contains("ORANGE 0 pts")
+                    && game.hudCell(2).contains("TIME ")
+                    && game.hudCell(3).contains("STATE RUNNING"),
+                    "Compact viewport must retain readable score, time and state");
+            check(game.hudTextFits(),
+                    "All six HUD cells must fit completely in compact viewport");
+            captureScreenshot(app, "compact-hud");
             app.setSize(960, 800);
             app.validate();
-            check(hasText(app.getContentPane(), "BETA 0.9.2"),
+            check(hasText(app.getContentPane(), "BETA 0.9.3"),
                     "Beta version must appear in live game HUD");
             captureScreenshot(app, "gameplay");
             check(button(app.getContentPane(), "Sound: Off") != null
@@ -250,6 +261,12 @@ public final class GuiSmoke {
                     check(finishedGame.model().state() == GameState.RESULTS
                             && !finishedGame.timerRunning(),
                             "Copying QA summary must never restart gameplay");
+                    // OS key repeat for a held Blue-fire key must not dismiss
+                    // results. Only an intentional replay control should.
+                    action(finishedGame, KeyEvent.VK_ENTER);
+                    check(finishedGame.model().state() == GameState.RESULTS
+                            && finishedGame.resultsVisible(),
+                            "Held fire key must not restart a finished round");
                     JButton replay = button(finishedGame, "Play again");
                     check(replay != null, "Play again action missing");
                     replay.doClick();
