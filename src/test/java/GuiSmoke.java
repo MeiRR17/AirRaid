@@ -5,6 +5,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.CountDownLatch;
@@ -41,6 +46,29 @@ public final class GuiSmoke {
 
     private static void check(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
+    }
+
+    /** Capture the actual Swing game frame in the CI virtual display. */
+    private static void captureScreenshot(Window app) {
+        BufferedImage capture = new BufferedImage(app.getWidth(), app.getHeight(),
+                BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = capture.createGraphics();
+        try {
+            app.paint(graphics);
+        } finally {
+            graphics.dispose();
+        }
+        File output = new File("target/airraid-v050-ci-gameplay.png");
+        if (!output.getParentFile().exists() && !output.getParentFile().mkdirs()) {
+            throw new AssertionError("Unable to create capture directory");
+        }
+        try {
+            if (!ImageIO.write(capture, "png", output)) {
+                throw new AssertionError("PNG encoder unavailable");
+            }
+        } catch (IOException error) {
+            throw new AssertionError("Unable to capture GUI smoke screenshot", error);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -83,6 +111,11 @@ public final class GuiSmoke {
             check(viewport.width() > 0 && viewport.height() > 0
                     && Math.abs(viewport.width() - viewport.height()) <= 1,
                     "Arena must remain square on resized window");
+            app.setSize(960, 800);
+            app.validate();
+            captureScreenshot(app);
+            check(button(app.getContentPane(), "Sound: Off") != null
+                    && !game.soundEnabled(), "Audio must be disabled by default");
 
             action(game, KeyEvent.VK_ENTER);
             action(game, KeyEvent.VK_SPACE);

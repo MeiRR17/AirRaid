@@ -5,6 +5,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.BasicStroke;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
@@ -24,7 +28,48 @@ public final class GameCanvas extends JPanel {
             Assets.image("/Resource/Bomb/Orange.png")
     };
     private final Image[] targets = new Image[4];
-    private final Font hud = Assets.font("/Resource/Font/Pixel.ttf", 26f);
+    private final Font hudSmall = Assets.font("/Resource/Font/Pixel.ttf", 18f);
+    private final Font hudMedium = Assets.font("/Resource/Font/Pixel.ttf", 23f);
+    private final Font hudLarge = Assets.font("/Resource/Font/Pixel.ttf", 26f);
+
+    private static final int EFFECT_LIFETIME_TICKS = 24;
+    private final List<Effect> effects = new ArrayList<>();
+
+    private static final class Effect {
+        final GameModel.FeedbackType type;
+        final int player;
+        final int points;
+        final double x;
+        final double y;
+        int ticks = EFFECT_LIFETIME_TICKS;
+
+        Effect(GameModel.Feedback event) {
+            type = event.type();
+            player = event.player();
+            points = event.points();
+            x = event.x();
+            y = event.y();
+        }
+    }
+
+    /**
+     * Short-lived hit/miss/shot indicators; no extra Swing Timer or OS threads.
+     * Effects are UI-only and cannot alter any score or collision decision.
+     */
+    public void showFeedback(GameModel.Feedback event) {
+        if (event.type() == GameModel.FeedbackType.ROUND_FINISHED) return;
+        if (effects.size() >= 16) effects.remove(0);
+        effects.add(new Effect(event));
+    }
+
+    public void advanceFeedback() {
+        for (Iterator<Effect> it = effects.iterator(); it.hasNext();) {
+            if (--it.next().ticks <= 0) it.remove();
+        }
+    }
+
+    public void clearFeedback() { effects.clear(); }
+    public int visibleEffectCount() { return effects.size(); }
 
     public GameCanvas(GameModel model) {
         this.model = Objects.requireNonNull(model);
@@ -54,6 +99,35 @@ public final class GameCanvas extends JPanel {
         int renderedHeight = (int) Math.floor(scale * GameRules.HEIGHT);
         return new Viewport((w - renderedWidth) / 2, (h - renderedHeight) / 2,
                             renderedWidth, renderedHeight, scale);
+    }
+
+    private void paintEffects(Graphics2D g) {
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setStroke(new BasicStroke(2.3f));
+        for (Effect effect : effects) {
+            double progress = 1.0 - effect.ticks / (double) EFFECT_LIFETIME_TICKS;
+            int alpha = Math.max(0, Math.min(255, (int) (220 * (1.0 - progress))));
+            Color color = switch (effect.type) {
+                case TARGET_HIT -> new Color(255, 221, 90, alpha);
+                case CANYON_MISS -> new Color(255, 100, 84, alpha);
+                case SHOT -> effect.player == 0
+                        ? new Color(105, 200, 255, alpha)
+                        : new Color(255, 164, 55, alpha);
+                default -> new Color(255, 255, 255, alpha);
+            };
+            g.setColor(color);
+            int x = (int) Math.max(32, Math.min(GameRules.WIDTH - 32, effect.x));
+            int y = (int) Math.max(32, Math.min(GameRules.HEIGHT - 32, effect.y));
+            int radius = (int) (8 + 23 * progress);
+            g.drawOval(x - radius, y - radius, 2 * radius, 2 * radius);
+            if (effect.type == GameModel.FeedbackType.TARGET_HIT) {
+                g.setFont(hudSmall);
+                g.drawString("+" + effect.points, x - 12, y - 24 - (int) (24 * progress));
+            } else if (effect.type == GameModel.FeedbackType.CANYON_MISS) {
+                g.setFont(hudSmall);
+                g.drawString("MISS", x - 25, y - 25 - (int) (16 * progress));
+            }
+        }
     }
 
     @Override protected void paintComponent(Graphics graphics) {
@@ -88,19 +162,20 @@ public final class GameCanvas extends JPanel {
                 }
             }
 
-            g.setFont(hud.deriveFont(23f));
+            paintEffects(g);
+            g.setFont(hudMedium);
             g.setColor(new Color(255, 169, 47));
             g.drawString("Orange: " + model.score(1), 24, 92);
-            g.setFont(hud.deriveFont(18f));
+            g.setFont(hudSmall);
             g.drawString("Strikes: " + model.canyonStrikes(1)
                     + "/" + GameRules.MAX_CANYON_STRIKES, 24, 122);
-            g.setFont(hud.deriveFont(23f));
+            g.setFont(hudMedium);
             g.setColor(new Color(98, 183, 255));
             g.drawString("Blue: " + model.score(0), 556, 92);
-            g.setFont(hud.deriveFont(18f));
+            g.setFont(hudSmall);
             g.drawString("Strikes: " + model.canyonStrikes(0)
                     + "/" + GameRules.MAX_CANYON_STRIKES, 556, 122);
-            g.setFont(hud.deriveFont(26f));
+            g.setFont(hudLarge);
             g.setColor(Color.WHITE);
             g.drawString("Time: " + ((model.timeRemainingMs() + 999) / 1000), 338, 130);
 
@@ -109,8 +184,7 @@ public final class GameCanvas extends JPanel {
                 g.fillRect(80, 290, 640, 140);
                 g.setColor(Color.WHITE);
                 String message = "Paused - press P to resume";
-                Font overlayFont = hud.deriveFont(26f);
-                g.setFont(overlayFont);
+                g.setFont(hudLarge);
                 int advance = g.getFontMetrics().stringWidth(message);
                 g.drawString(message, (GameRules.WIDTH - advance) / 2, 370);
             }

@@ -14,6 +14,11 @@ public final class GameModel {
 
     public enum EndReason { NONE, TIME_EXPIRED, CANYON_STRIKES }
 
+    public enum FeedbackType { SHOT, TARGET_HIT, CANYON_MISS, ROUND_FINISHED }
+
+    /** Visual/sound cue from model state, never from a separate audio thread. */
+    public record Feedback(FeedbackType type, int player, double x, double y, int points) { }
+
     private final List<Target> targetLayout;
     private final double blueStartX;
     private final double orangeStartX;
@@ -23,6 +28,7 @@ public final class GameModel {
     private final int[] canyonStrikes = new int[2];
     private final boolean[] fireHeld = new boolean[2];
     private final List<Target> targets = new ArrayList<>();
+    private final List<Feedback> pendingFeedback = new ArrayList<>();
     private GameState state = GameState.MENU;
     private EndReason endReason = EndReason.NONE;
     private int winningPlayer = -1;
@@ -53,6 +59,7 @@ public final class GameModel {
     }
 
     private void resetWorld() {
+        pendingFeedback.clear();
         planes[0] = new Player(blueStartX, HEIGHT / 4.0, 64, 44, +1);
         planes[1] = new Player(orangeStartX, HEIGHT / 4.0, 64, 44, -1);
         bombs[0] = new Bomb(+1);
@@ -96,6 +103,7 @@ public final class GameModel {
     public void stop() {
         state = GameState.STOPPED;
         clearInput();
+        pendingFeedback.clear();
     }
 
     private void clearInput() {
@@ -113,7 +121,10 @@ public final class GameModel {
         validatePlayer(index);
         if (state != GameState.RUNNING || fireHeld[index]) return;
         fireHeld[index] = true;
-        bombs[index].launch(planes[index]);
+        if (bombs[index].launch(planes[index])) {
+            pendingFeedback.add(new Feedback(FeedbackType.SHOT, index,
+                    bombs[index].x(), bombs[index].y(), 0));
+        }
     }
 
     public void releaseFire(int index) {
@@ -190,9 +201,16 @@ public final class GameModel {
             int player = impact.player();
             if (impact.target() == null) {
                 canyonStrikes[player]++;
+                pendingFeedback.add(new Feedback(FeedbackType.CANYON_MISS, player,
+                        bombs[player].x(), bombs[player].y(), 0));
                 bombs[player].reset(planes[player]);
             } else if (!impact.target().isDestroyed()) {
-                score[player] += impact.target().hit();
+                int awarded = impact.target().hit();
+                score[player] += awarded;
+                pendingFeedback.add(new Feedback(FeedbackType.TARGET_HIT, player,
+                        impact.target().x() + impact.target().width() / 2.0,
+                        impact.target().y() + impact.target().height() / 2.0,
+                        awarded));
                 bombs[player].reset(planes[player]);
             }
             // If the other player claimed this same target earlier in the
@@ -220,6 +238,19 @@ public final class GameModel {
         endReason = reason;
         winningPlayer = winner;
         clearInput();
+        pendingFeedback.add(new Feedback(FeedbackType.ROUND_FINISHED,
+                winner, WIDTH / 2.0, HEIGHT / 2.0, 0));
+    }
+
+    /**
+     * Drain-only channel for UI feedback. Calling it never alters game physics.
+     * The caller must have the same ownership as tick/pressFire (EDT in Swing).
+     */
+    public List<Feedback> drainFeedback() {
+        if (pendingFeedback.isEmpty()) return List.of();
+        List<Feedback> snapshot = List.copyOf(pendingFeedback);
+        pendingFeedback.clear();
+        return snapshot;
     }
 
     public GameState state() { return state; }
