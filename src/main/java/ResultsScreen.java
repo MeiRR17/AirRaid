@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 public final class ResultsScreen extends JPanel {
     private final JLabel outcome = new JLabel("", SwingConstants.CENTER);
     private final JLabel summary = new JLabel("", SwingConstants.CENTER);
+    private final JLabel sessionSummary = new JLabel("ROUND STATISTICS", SwingConstants.CENTER);
     private final JLabel bluePerformance = new JLabel("", SwingConstants.CENTER);
     private final JLabel orangePerformance = new JLabel("", SwingConstants.CENTER);
     private final JButton replay = new JButton("Play again");
@@ -54,11 +55,13 @@ public final class ResultsScreen extends JPanel {
         center.add(summary);
         center.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        JLabel statHeading = new JLabel("ROUND STATISTICS", SwingConstants.CENTER);
-        statHeading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
-        statHeading.setForeground(new Color(173, 206, 233));
-        statHeading.setAlignmentX(CENTER_ALIGNMENT);
-        center.add(statHeading);
+        sessionSummary.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+        sessionSummary.setForeground(new Color(173, 206, 233));
+        sessionSummary.setAlignmentX(CENTER_ALIGNMENT);
+        sessionSummary.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        sessionSummary.getAccessibleContext().setAccessibleName(
+                "Completed-round session wins, losses and draws");
+        center.add(sessionSummary);
         center.add(Box.createRigidArea(new Dimension(0, 5)));
 
         JPanel stats = new JPanel(new GridLayout(1, 2, 12, 0));
@@ -124,8 +127,26 @@ public final class ResultsScreen extends JPanel {
     }
 
     public void showResult(GameModel model, UserPreferences preferences) {
+        showResult(model, preferences, null);
+    }
+
+    /**
+     * Show the completed match plus optional session-only performance summary.
+     * Old callers still render the per-round statistics without a session.
+     */
+    public void showResult(GameModel model, UserPreferences preferences,
+                           RoundHistory.Summary session) {
         reportText = BetaRoundReport.format(model, preferences);
         reportStatus.setText("Hit rate = hits / shots. QA report stays local.");
+        if (session == null) {
+            sessionSummary.setText("ROUND STATISTICS");
+            sessionSummary.setToolTipText(null);
+        } else {
+            sessionSummary.setText(session.compactLabel());
+            sessionSummary.setToolTipText(session.bestScoreLabel());
+            sessionSummary.getAccessibleContext().setAccessibleDescription(
+                    session.bestScoreLabel());
+        }
         outcome.setText(model.resultText());
         summary.setText("<html><div style='text-align:center'>Blue "
                 + model.score(0) + " pts / " + model.canyonStrikes(0) + " strikes"
@@ -147,6 +168,7 @@ public final class ResultsScreen extends JPanel {
     public String outcomeText() { return outcome.getText(); }
     public String reportText() { return reportText; }
     public String reportStatusText() { return reportStatus.getText(); }
+    public String sessionSummaryText() { return sessionSummary.getText(); }
     public JButton reportButton() { return copyReport; }
     public String playerStatText(int player) {
         if (player == 0) return bluePerformance.getText();
