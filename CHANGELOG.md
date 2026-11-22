@@ -2,6 +2,13 @@
 
 This changelog tracks development milestones. None of these entries is an approved production release.
 
+## 0.9.6 — Session-only round performance history
+- Track completed rounds, Blue/Orange wins, draws and session-best scores for the current local gameplay session.
+- Update the Results heading with aggregate session results and provide accessible best-score details without adding controls or affecting match physics.
+- Reset the record automatically when gameplay is discarded on return to the main menu; do not persist user profiles, telemetry or private history.
+- Preserve the per-match copied QA report format and all earlier ResultsScreen.showResult callers.
+- This development branch has not been tested, built or approved for distribution; release gates remain blocked.
+
 ## 0.9.5 — Match statistics and result performance cards
 - Count actual launched shots and uniquely destroyed targets per player inside the deterministic game engine.
 - Display shot/hit totals and rounded hit rates for Blue and Orange on the Results screen.
