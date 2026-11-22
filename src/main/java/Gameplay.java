@@ -29,6 +29,7 @@ public final class Gameplay extends JPanel {
     private static final String RESULTS = "results";
 
     private final GameModel model = new GameModel();
+    private final RoundHistory roundHistory = new RoundHistory();
     private final GameCanvas canvas = new GameCanvas(model);
     private final CardLayout centerNavigation = new CardLayout();
     private final JPanel centerCards = new JPanel(centerNavigation);
@@ -260,7 +261,11 @@ public final class Gameplay extends JPanel {
     }
 
     private void onRoundFinished() {
-        results.showResult(model, preferences);
+        // The results callback can be triggered by repaint/navigation races.
+        // Record the completed match once, not once for each callback.
+        if (showingResults) return;
+        RoundHistory.Summary session = roundHistory.record(model);
+        results.showResult(model, preferences, session);
         centerNavigation.show(centerCards, RESULTS);
         showingResults = true;
         pauseButton.setText("Pause");
@@ -304,4 +309,6 @@ public final class Gameplay extends JPanel {
     public boolean soundEnabled() { return sound.isEnabled(); }
     public UserPreferences appliedPreferences() { return preferences; }
     public String completedQaReport() { return results.reportText(); }
+    /** Accessible in-memory progress for current Gameplay; menu exit discards it. */
+    public RoundHistory.Summary sessionSummary() { return roundHistory.summary(); }
 }

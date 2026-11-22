@@ -2,7 +2,7 @@
 
 **AirRaid** is an offline, two-player Java Swing arcade game. Each plane flies automatically and players use bombs to score against targets. This project is a *game*, not an emergency alert system.
 
-**Current development version: v0.9.5 — match statistics and end-of-round performance cards.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
+**Current feature-branch development version: v0.9.6 — private session round outcomes.** Timing, replay stability and structured QA reporting are implemented. This is not a public beta or production distribution; media rights and platform acceptance remain blocked.
 
 ## Build and play
 
@@ -29,6 +29,14 @@ The packaging script uses the host's JDK 21 `jpackage` tool and creates the appl
 For **internal QA only**, pass `--installer` to also create an **unsigned** host-native installer: Linux `.deb`, macOS `.dmg`, or Windows `.exe`. These builds are **not published or uploaded** because artwork/font licensing and source-code approval remain unresolved. The regular PR CI verifies a Linux app image and its bundled launcher; the opt-in [three-platform packaging workflow](.github/workflows/desktop-packages.yml) can run app-image verification on macOS and Windows as well. Cross-platform clean installation and uninstall tests are **not yet certified**.
 
 See [Desktop packaging guide](docs/DESKTOP_DISTRIBUTION.md), [v0.8.0 verification](docs/V0_8_IMPLEMENTATION.md) and [release gates](docs/RELEASE_CHECKLIST.md).
+
+## Round-to-round record (v0.9.6 feature branch)
+
+After each completed round, the Results screen now displays a session tally: total rounds, Blue wins, Orange wins and draws. Hover over the session summary for the best score achieved by either side within that local session; screen readers can access the same best-score description. The normal per-round cards still show scores, shots, hits and hit rate.
+
+This is deliberately a **memory-only, single-gameplay-session** record. Restarting or replaying a round retains the tally; returning to the main menu disposes the gameplay screen and clears it. No history file, account, network request or telemetry is created. The existing opt-in **Copy QA report** continues to describe the individual completed round and does not include the session tally, so it cannot be misread as verified playtest evidence.
+
+The version number in the Java app and Maven project has been advanced to **0.9.6** for this development branch. This is not an approved public release: no gameplay run, Java compilation, automated tests, external playtests or multi-platform package validation were performed for the change.
 
 ## Match statistics — new in v0.9.5
 
